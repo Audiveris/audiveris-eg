@@ -10,5 +10,6 @@ manifest.mf
 nbproject
 project
 scores
+scores-ref
 scripts
 tesseract.log
