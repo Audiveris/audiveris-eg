@@ -436,6 +436,12 @@ public class DotTranslation
                 return false;
             }
         }
+
+        @Override
+        protected String internals ()
+        {
+            return "barline:" + barline;
+        }
     }
 
     //-------------//
@@ -648,6 +654,12 @@ public class DotTranslation
             {
                 return "chord:" + chord;
             }
+        }
+
+        @Override
+        protected String internals ()
+        {
+            return "chord:" + chord;
         }
     }
 }
