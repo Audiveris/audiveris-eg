@@ -50,7 +50,7 @@ import java.util.List;
  * @param <S> precise section (sub)type
  */
 public class Lag<L extends Lag<L, S>, S extends Section>
-    extends Digraph<L, S>
+    extends Digraph<L, S, SectionSignature>
     implements Oriented
 {
     //~ Static fields/initializers ---------------------------------------------
@@ -156,6 +156,15 @@ public class Lag<L extends Lag<L, S>, S extends Section>
     public final Collection<S> getSections ()
     {
         return getVertices();
+    }
+
+    //----------------//
+    // getOrientation //
+    //----------------//
+    @Implement(Oriented.class)
+    public LagOrientation getOrientation ()
+    {
+        return orientation.getOrientation();
     }
 
     //---------------//
@@ -400,6 +409,7 @@ public class Lag<L extends Lag<L, S>, S extends Section>
      * Purge the lag from section with a too small foreground weight, provided
      * they do not cut larger glyphs
      *
+     * @param minForeWeight
      * @return the purged sections
      */
     public List<S> purgeTinySections (final int minForeWeight)

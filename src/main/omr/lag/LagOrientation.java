@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------//
 //                                                                            //
-//                         M o u s e M o v e m e n t                          //
+//                        L a g O r i e n t a t i o n                         //
 //                                                                            //
 //----------------------------------------------------------------------------//
 // <editor-fold defaultstate="collapsed" desc="hdr">                          //
@@ -9,30 +9,17 @@
 //  Goto http://kenai.com/projects/audiveris to report bugs or suggestions.   //
 //----------------------------------------------------------------------------//
 // </editor-fold>
-package omr.selection;
+package omr.lag;
 
 
 /**
- * Class <code>MouseMovement</code> defines which phase of user action generated
- * the event. For example, we may decide to update minimal information while the
- * user is moving the mouse, and launch expensive processing only when the user
- * is releasing the mouse
+ * Class <code>LagOrientation</code> defines lag orientation as horizontal or
+ * vertical
  *
  * @author Herv&eacute Bitteur
  * @version $Id$
  */
-public enum MouseMovement {
-    /**
-     * User presses the mouse button down, or manually enters the location
-     * data in a dedicated board
-     */
-    PRESSING,
-    /**
-     * User moves the mouse while keeping the button down
-     */
-    DRAGGING, 
-    /**
-     * User releases the mouse button
-     */
-    RELEASING;
+public enum LagOrientation {
+    HORIZONTAL,
+    VERTICAL;
 }

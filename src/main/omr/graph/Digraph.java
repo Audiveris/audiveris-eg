@@ -35,12 +35,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @param <D> precise type for digraph (which is pointed back by vertex)
  * @param <V> precise type for vertices handled by this digraph
+ * @param <SIG> precise type for vertex signature
  *
  * @author Herv&eacute; Bitteur
  * @version $Id$
  */
 @ThreadSafe
-public class Digraph<D extends Digraph<D, V>, V extends Vertex>
+public class Digraph<D extends Digraph<D, V, SIG>, V extends Vertex, SIG>
 {
     //~ Static fields/initializers ---------------------------------------------
 
@@ -55,8 +56,14 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
     /** Related Vertex (sub)class, to create vertices of the proper type */
     private final Class<?extends V> vertexClass;
 
-    /** All Vertices of the graph, handled by a map: Id -> Vertex */
+    /** All current Vertices of the graph, handled by a map: Id -> Vertex */
     private final ConcurrentHashMap<Integer, V> vertices = new ConcurrentHashMap<Integer, V>();
+
+    /** Removed vertices */
+    private final ConcurrentHashMap<Integer, V> oldVertices = new ConcurrentHashMap<Integer, V>();
+
+    /** All vertices, accessed via their signature */
+    private final ConcurrentHashMap<SIG, V> sigMap = new ConcurrentHashMap<SIG, V>();
 
     /** Global id to uniquely identify a vertex */
     private final AtomicInteger globalVertexId = new AtomicInteger(0);
@@ -128,7 +135,26 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
      */
     public V getVertexById (int id)
     {
-        return vertices.get(id);
+        V vertex = vertices.get(id);
+
+        if (vertex != null) {
+            return vertex;
+        } else {
+            return oldVertices.get(id);
+        }
+    }
+
+    //----------------------//
+    // getVertexBySignature //
+    //----------------------//
+    /**
+     * Retrieve a vertex, knowing its signature
+     * @param signature the vertex signature
+     * @return the vertex found, or null
+     */
+    public V getVertexBySignature (SIG signature)
+    {
+        return sigMap.get(signature);
     }
 
     //----------------//
@@ -191,6 +217,7 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
         vertex.setGraph(this); // Unchecked
         vertex.setId(globalVertexId.incrementAndGet()); // Atomic increment
         vertices.put(vertex.getId(), vertex); // Atomic insertion
+        sigMap.put((SIG) vertex.getSignature(), vertex); // Atomic insertion
     }
 
     //---------//
@@ -256,6 +283,18 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
         }
     }
 
+    //---------------//
+    // restoreVertex //
+    //---------------//
+    /**
+     * Restore an old vertex
+     * @param vertex the old vertex to restore
+     */
+    public void restoreVertex (V vertex)
+    {
+        vertices.put(vertex.getId(), vertex); // Atomic insertion
+    }
+
     //----------//
     // toString //
     //----------//
@@ -293,6 +332,7 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
     /**
      * Return the index of the given view
      *
+     * @param view the given view
      * @return the view index, or -1 if not found
      */
     public int viewIndexOf (DigraphView view)
@@ -318,7 +358,8 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
     // removeVertex //
     //--------------//
     /**
-     * (package access from Vertex) to remove the vertex from the graph
+     * (package access from Vertex) to remove the vertex from the graph, the
+     * removed vertex will now be stored in the oldVertices map.
      *
      * @param vertex the vertex to be removed
      */
@@ -336,6 +377,8 @@ public class Digraph<D extends Digraph<D, V>, V extends Vertex>
         if (vertices.remove(vertex.getId()) == null) { // Atomic removal
             throw new RuntimeException(
                 "Trying to remove an unknown vertex: " + vertex);
+        } else {
+            oldVertices.put(vertex.getId(), vertex);
         }
     }
 }
