@@ -272,7 +272,7 @@ public class ShapeBoard
 
             if (rep != null) {
                 JButton button = new JButton();
-                button.setIcon(rep.getSymbol());
+                button.setIcon(rep.getDecoratedSymbol());
                 button.setName(range.getName());
                 button.addActionListener(rangeListener);
                 button.setToolTipText(range.getName());
@@ -310,17 +310,29 @@ public class ShapeBoard
         panel.add(close);
 
         // One button per shape
-        for (Shape shape : range.getShapes()) {
+        for (Shape shape : range.getSortedShapes()) {
             JButton                 button = new ShapeButton(shape);
+            GhostDropAdapter<Shape> imageAdapter = null;
 
             // Directly use the shape icon image for DnD ghost
-            GhostDropAdapter<Shape> imageAdapter = new GhostImageAdapter<Shape>(
-                glassPane,
-                shape,
-                shape.getSymbol().getIconImage());
-            imageAdapter.addGhostDropListener(dropListener);
+            if (shape.getPhysicalShape()
+                     .getSymbol() != null) {
+                ShapeSymbol symbol = (shape == Shape.BEAM_HOOK)
+                                     ? shape.getPhysicalShape()
+                                            .getSymbol()
+                                     : shape.getDecoratedSymbol();
+                imageAdapter = new GhostImageAdapter<Shape>(
+                    glassPane,
+                    shape,
+                    symbol.getIconImage());
+                imageAdapter.addGhostDropListener(dropListener);
+            } else {
+                imageAdapter = new GhostImageAdapter<Shape>(
+                    glassPane,
+                    Shape.NON_DRAGGABLE,
+                    Shape.NON_DRAGGABLE.getSymbol().getIconImage());
+            }
 
-            // Handle the click (MouseListener's)
             button.addMouseListener(imageAdapter); // For DnD transfer
             button.addMouseListener(mouseListener); // For double-click
 
@@ -351,7 +363,7 @@ public class ShapeBoard
         public ShapeButton (Shape shape)
         {
             this.shape = shape;
-            setIcon(shape.getSymbol());
+            setIcon(shape.getDecoratedSymbol());
             setName(shape.toString());
             setToolTipText(shape.toString());
 

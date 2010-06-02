@@ -34,14 +34,7 @@ import omr.sheet.SystemInfo;
 import omr.ui.symbol.ShapeSymbol;
 import omr.ui.util.UIUtilities;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Stroke;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImageOp;
+import java.awt.*;
 
 /**
  * Class <code>SheetPainter</code> defines for every node in Score hierarchy
@@ -186,20 +179,20 @@ public class SheetPainter
             for (SystemInfo system : sheet.getSystems()) {
                 visit(system);
             }
-        } else {
-            // Horizontals
-            if (sheet.getHorizontals() != null) {
-                // Ledgers
-                for (Ledger ledger : sheet.getHorizontals()
-                                          .getLedgers()) {
-                    ledger.render(g);
-                }
+        }
 
-                // Endings
-                for (Ending ending : sheet.getHorizontals()
-                                          .getEndings()) {
-                    ending.render(g);
-                }
+        // Horizontals
+        if (sheet.getHorizontals() != null) {
+            // Ledgers
+            for (Ledger ledger : sheet.getHorizontals()
+                                      .getLedgers()) {
+                ledger.render(g);
+            }
+
+            // Endings
+            for (Ending ending : sheet.getHorizontals()
+                                      .getEndings()) {
+                ending.render(g);
             }
         }
 
@@ -290,22 +283,30 @@ public class SheetPainter
 
         for (Glyph glyph : systemInfo.getGlyphs()) {
             if (glyph.isVirtual()) {
-                ShapeSymbol symbol = glyph.getShape()
-                                          .getNakedShape()
-                                          .getSymbol();
+                try {
+                    ShapeSymbol symbol = glyph.getShape()
+                                              .getPhysicalShape()
+                                              .getSymbol();
 
-                if (symbol != null) {
-                    ScoreSystem scoreSystem = systemInfo.getScoreSystem();
+                    if (symbol != null) {
+                        ScoreSystem scoreSystem = systemInfo.getScoreSystem();
 
-                    if (scoreSystem != null) {
-                        Point center = glyph.getAreaCenter();
-                        Point topLeft = new Point(
-                            (int) Math.rint(
-                                center.x - ((symbol.getWidth() * ratio) / 2)),
-                            (int) Math.rint(
-                                center.y - ((symbol.getHeight() * ratio) / 2)));
-                        symbol.draw(g, topLeft, interline);
+                        if (scoreSystem != null) {
+                            Point center = glyph.getAreaCenter();
+                            Point topLeft = new Point(
+                                (int) Math.rint(
+                                    center.x -
+                                    ((symbol.getWidth() * ratio) / 2)),
+                                (int) Math.rint(
+                                    center.y -
+                                    ((symbol.getHeight() * ratio) / 2)));
+                            symbol.draw(g, topLeft, interline);
+                        }
                     }
+                } catch (Exception ex) {
+                    logger.warning(
+                        "Error drawing virtual glyph#" + glyph.getId(),
+                        ex);
                 }
             }
         }

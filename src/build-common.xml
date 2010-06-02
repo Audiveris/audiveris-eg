@@ -69,6 +69,12 @@
                      includes="**"
                      excludes="${dist.excludes}"
                      />
+
+            <!-- zong files -->
+            <zipfileset dir="${zong.dir}" prefix="data"
+                     includes="**"
+                     excludes="${dist.excludes}"
+                     />
         
             <!-- config files -->
             <zipfileset dir="${config.dir}" prefix="config"
@@ -202,7 +208,7 @@
             <sequential>
 		<antcall>
 		    <param name="sig" value="@{file}"/>
-		    <param name="prefix" value="http://kenai.com/projects/audiveris/downloads/download/jars%252F"/>
+		    <param name="prefix" value="http://kenai.com/downloads/audiveris/jars/"/>
 		    <target name="-read-sig"/>
 		    <target name="-update-jar"/>
 		</antcall>
@@ -216,7 +222,7 @@
             <sequential>
 		<antcall>
 		    <param name="sig" value="@{file}"/>
-		    <param name="prefix" value="http://kenai.com/projects/audiveris/downloads/download/jars%252Flib%252F"/>
+		    <param name="prefix" value="http://kenai.com/downloads/audiveris/jars/lib/"/>
 		    <target name="-read-sig"/>
 		    <target name="-update-jar"/>
 		</antcall>
