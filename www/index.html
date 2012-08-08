@@ -15,7 +15,7 @@
         <link rel="stylesheet" href="branding/css/global.css"/>
         <style type="text/css">
             /*<![CDATA[*/
-            div#highlights {
+            #highlights {
                 font-size: 13px;
                 float: left;
                 width: 320px;
@@ -25,33 +25,33 @@
                 margin: 0px;
                 margin-bottom: 10px;
             }
-            div#abstract {
+            #abstract {
                 width: 540px;
                 padding-top: 30px;
             }
-            div#snapshot {
+            #snapshot {
                 float: left;
                 width: 220px;
                 height: 172px;
                 margin-top: 5px;
                 box-shadow:0px 5px 5px rgba(0,0,0,0.3);
             }
-            img#thumbnail {
+            #thumbnail {
                 position: absolute;
                 left:350px;
                 top:320px;
                     
             }
-            div#news {
+            #news {
                 width: 180px;
             }
-            div#development {
+            #development {
                 width: 330px;
             }
-            div#help {
+            #help {
                 width: 395px;
             }
-            div#download {
+            #download {
                 width: 800px;
             }
             /*]]>*/
@@ -97,6 +97,12 @@
             <div class="block" id="news">
                 <h2>News</h2>
                 <ul class="light">
+                    <li><a class="light" href="docs/manual/installation.html">Just switched to Tesseract 3.x</a>
+                        <div class="creation-date">June 13, 2012</div>
+                    </li>
+                    <li><a class="light" href="docs/manual/handbook.html">Handbook available</a>
+                        <div class="creation-date">May 23, 2012</div>
+                    </li>
                     <li><a class="light" href="http://kenai.com/projects/audiveris/downloads/download/audiveris-4.1beta.3162.msi">Windows installer released</a>
                         <div class="creation-date">February 22, 2012</div>
                     </li>
@@ -122,8 +128,6 @@
             <div class="block" id="help">
                 <h2>Help wanted for</h2>
                 <ul>
-                    <li>Upgrading from <a href="http://code.google.com/p/tesseract-ocr/">
-                            Tesseract OCR</a> V2.04 to V3.x</li>
                     <li>Coupling with <a href="http://musescore.org">MuseScore</a>
                         to edit, print, play, etc</li>
                     <li>Use of cloud computing to provide "OMR as a service"</li>

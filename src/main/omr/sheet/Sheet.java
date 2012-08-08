@@ -76,6 +76,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import omr.grid.GridBuilder;
 
 /**
  * Class {@code Sheet} is the corner stone for Sheet processing,
@@ -95,12 +96,13 @@ public class Sheet
     private static final Logger logger = Logger.getLogger(Sheet.class);
 
     /** Events that can be published on a sheet service */
-    public static final Class[] allowedEvents = new Class[]{
+    public static final Class<?>[] allowedEvents = new Class<?>[]{
         LocationEvent.class,
         PixelLevelEvent.class
     };
 
     //~ Instance fields --------------------------------------------------------
+    //
     /** Containing score */
     private final Score score;
 
@@ -120,6 +122,7 @@ public class Sheet
     private final List<SystemInfo> systems;
 
     //-- resettable members ----------------------------------------------------
+    //
     /** The related picture */
     private Picture picture;
 
@@ -139,7 +142,7 @@ public class Sheet
     private Lag vLag;
 
     /** Global glyph nest */
-    private final Nest nest;
+    private Nest nest;
 
     /**
      * Non-lag & non-glyph related selections for this sheet
@@ -148,11 +151,15 @@ public class Sheet
     private final SelectionService locationService;
 
     // Companion processors
+    //
     /** Scale */
-    private final ScaleBuilder scaleBuilder;
+    private ScaleBuilder scaleBuilder;
 
     /** Staves */
     private final StaffManager staffManager;
+
+    /** Grid */
+    private GridBuilder gridBuilder;
 
     /** Systems */
     private final SystemManager systemManager;
@@ -217,12 +224,6 @@ public class Sheet
 
         locationService = new SelectionService("sheet", allowedEvents);
 
-        // Beware: Nest must subscribe to location before any lag,
-        // to allow cleaning up of glyph data, before publication by a lag
-        nest = new BasicNest("gNest", this);
-        nest.setServices(locationService);
-
-        scaleBuilder = new ScaleBuilder(this);
         staffManager = new StaffManager(this);
         systemManager = new SystemManager(this);
         bench = new SheetBench(this);
@@ -245,7 +246,7 @@ public class Sheet
     // done //
     //------//
     /**
-     * Remember that the provided step has been done on the sheet
+     * Remember that the provided step has been completed on the sheet.
      *
      * @param step the provided step
      */
@@ -416,19 +417,6 @@ public class Sheet
         return currentStep;
     }
 
-    //----------------------//
-    // getDefaultHistoRatio //
-    //----------------------//
-    /**
-     * Report the default value of histogram threhold for staff detection
-     *
-     * @return the default ratio of maximum histogram value
-     */
-    public static double getDefaultHistoRatio ()
-    {
-        return constants.defaultStaffThreshold.getValue();
-    }
-
     //-------------------------//
     // getDefaultMaxForeground //
     //-------------------------//
@@ -469,25 +457,6 @@ public class Sheet
     public int getHeight ()
     {
         return picture.getHeight();
-    }
-
-    //---------------//
-    // getHistoRatio //
-    //---------------//
-    /**
-     * Get the sheet value of histogram threhold for staff detection.
-     * If the value is not yet set, it is set to the default value and returned.
-     *
-     * @return the ratio of maximum histogram value
-     * @see #hasHistoRatio()
-     */
-    public double getHistoRatio ()
-    {
-        if (!hasHistoRatio()) {
-            setHistoRatio(getDefaultHistoRatio());
-        }
-
-        return histoRatio;
     }
 
     //------------------//
@@ -658,6 +627,21 @@ public class Sheet
         return scaleBuilder;
     }
 
+    //----------------//
+    // getGridBuilder //
+    //----------------//
+    /**
+     * @return the gridBuilder
+     */
+    public GridBuilder getGridBuilder ()
+    {
+        if (gridBuilder == null) {
+            gridBuilder = new GridBuilder(this);
+        }
+
+        return gridBuilder;
+    }
+
     //----------//
     // getScore //
     //----------//
@@ -783,7 +767,7 @@ public class Sheet
      *
      * @param point the provided pixel point
      * @return the containing system info
-     * (or null if there is no enclosing system)
+     *         (or null if there is no enclosing system)
      */
     public SystemInfo getSystemOf (PixelPoint point)
     {
@@ -967,7 +951,7 @@ public class Sheet
      *
      * @param point the provided point
      * @return a collection of systems ordered by increasing distance from the
-     * provided point
+     *         provided point
      */
     public List<SystemInfo> getSystemsNear (final Point point)
     {
@@ -976,7 +960,6 @@ public class Sheet
                 neighbors,
                 new Comparator<SystemInfo>()
                 {
-
                     @Override
                     public int compare (SystemInfo s1,
                                         SystemInfo s2)
@@ -1166,22 +1149,14 @@ public class Sheet
     //----------------//
     // setCurrentStep //
     //----------------//
+    /**
+     * This records the starting of a step.
+     *
+     * @param step the starting step
+     */
     public void setCurrentStep (Step step)
     {
         currentStep = step;
-    }
-
-    //----------------------//
-    // setDefaultHistoRatio //
-    //----------------------//
-    /**
-     * Set the default value of histogram threhold for staff detection
-     *
-     * @param histoRatio the default ratio of maximum histogram value
-     */
-    public static void setDefaultHistoRatio (double histoRatio)
-    {
-        constants.defaultStaffThreshold.setValue(histoRatio);
     }
 
     //-------------------------//
@@ -1240,6 +1215,13 @@ public class Sheet
     {
         // Reset most of all members
         reset();
+
+        // Beware: Glyph nest must subscribe to location before any lag,
+        // to allow cleaning up of glyph data, before publication by a lag
+        nest = new BasicNest("gNest", this);
+        nest.setServices(locationService);
+
+        scaleBuilder = new ScaleBuilder(this);
 
         try {
             picture = new Picture(image, locationService);
@@ -1508,6 +1490,12 @@ public class Sheet
         horizontals = null;
         hLag = null;
         vLag = null;
+        nest = null;
+
+        scaleBuilder = null;
+        staffManager.reset();
+        gridBuilder = null;
+        systemManager.reset();
         systemsBuilder = null;
         symbolsController = null;
         verticalsController = null;
@@ -1516,7 +1504,7 @@ public class Sheet
         histoRatio = null;
         currentStep = null;
         doneSteps = new HashSet<>();
-        systemManager.reset();
+
     }
 
     //------------//
@@ -1556,10 +1544,5 @@ public class Sheet
                 "ByteLevel",
                 140,
                 "Maximum gray level for a pixel to be considered as foreground (black)");
-
-        //
-        Constant.Ratio defaultStaffThreshold = new Constant.Ratio(
-                0.44,
-                "Ratio of horizontal histogram to detect staves");
     }
 }

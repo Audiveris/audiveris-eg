@@ -281,7 +281,7 @@ public class FilamentAlignment
                 // Lookup corresponding section(s)
                 Scale scale = new Scale(glyph.getInterline());
                 int probeWidth = scale.toPixels(
-                        super.getProbeWidth());
+                        BasicAlignment.getProbeWidth());
                 Orientation orientation = getRoughOrientation();
                 final Point2D point = points.get(idx);
                 Point2D orientedPt = orientation.oriented(
@@ -305,7 +305,6 @@ public class FilamentAlignment
                             found,
                             new Comparator<Section>()
                             {
-
                                 @Override
                                 public int compare (Section s1,
                                                     Section s2)
@@ -320,9 +319,8 @@ public class FilamentAlignment
                 Section section = found.isEmpty() ? null : found.get(0);
 
                 if (section != null) {
-                    logger.info("Removed section#{0} from {1} F{2}",
-                                new Object[]{section.getId(), orientation,
-                                             glyph.getId()});
+                    logger.fine("Removed section#{0} from {1} F{2}",
+                                section.getId(), orientation, glyph.getId());
                     glyph.removeSection(section, Linking.LINK_BACK);
                     modified = true;
                 }
@@ -346,7 +344,7 @@ public class FilamentAlignment
         }
 
         // Then the absolute defining points?
-        if (constants.showFilamentPoints.getValue() && (points != null)) {
+        if (constants.showFilamentPoints.isSet() && (points != null)) {
             // Point radius
             double r = glyph.getInterline() * constants.filamentPointSize.
                     getValue();
@@ -498,7 +496,7 @@ public class FilamentAlignment
      * Report bisectors of inter-points segments.
      *
      * @return sequence of bisectors, such that bisectors[i] is bisector of
-     * segment (i -> i+1)
+     *         segment (i -> i+1)
      */
     private List<Line2D> getBisectors ()
     {

@@ -13,12 +13,10 @@ package omr.glyph.ui;
 
 import omr.glyph.SymbolsModel;
 import omr.glyph.facets.Glyph;
-import omr.glyph.text.TextRole;
 
 import omr.log.Logger;
 
 import omr.score.entity.Note;
-import omr.score.entity.Text.CreatorText.CreatorType;
 import omr.score.entity.TimeRational;
 
 import omr.script.BoundaryTask;
@@ -31,6 +29,8 @@ import omr.sheet.BrokenLineContext;
 import omr.sheet.SystemBoundary;
 import omr.sheet.SystemInfo;
 
+import omr.text.TextRoleInfo;
+
 import omr.util.BrokenLine;
 import omr.util.VerticalSide;
 
@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Class {@code SymbolsController} is a GlyphsController specifically
@@ -51,19 +50,18 @@ import java.util.logging.Level;
  * @author Hervé Bitteur
  */
 public class SymbolsController
-    extends GlyphsController
+        extends GlyphsController
 {
     //~ Static fields/initializers ---------------------------------------------
 
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(
-        SymbolsController.class);
+            SymbolsController.class);
 
     /** Color for hiding unknown glyphs when filter is ON */
     public static final Color hiddenColor = Color.white;
 
     //~ Constructors -----------------------------------------------------------
-
     //-------------------//
     // SymbolsController //
     //-------------------//
@@ -78,7 +76,6 @@ public class SymbolsController
     }
 
     //~ Methods ----------------------------------------------------------------
-
     //----------------------//
     // asyncAssignRationals //
     //----------------------//
@@ -86,12 +83,12 @@ public class SymbolsController
      * Asynchronously assign a rational value to a collection of glyphs with
      * CUSTOM_TIME_SIGNATURE shape
      *
-     * @param glyphs the impacted glyphs
+     * @param glyphs       the impacted glyphs
      * @param timeRational the time sig rational value
      * @return the task that carries out the processing
      */
-    public Task asyncAssignRationals (Collection<Glyph>  glyphs,
-                                      final TimeRational timeRational)
+    public Task<Void, Void> asyncAssignRationals (Collection<Glyph> glyphs,
+                                                  TimeRational timeRational)
     {
         return new RationalTask(sheet, timeRational, glyphs).launch(sheet);
     }
@@ -103,19 +100,17 @@ public class SymbolsController
      * Asynchronously assign text characteristics to a collection of textual
      * glyphs
      *
-     * @param glyphs the impacted glyphs
-     * @param textType the type of the creator, if relevant
-     * @param textRole the role of this textual element
+     * @param glyphs      the impacted glyphs
+     * @param roleInfo    the role of this textual element
      * @param textContent the content as a string (if not empty)
      * @return the task that carries out the processing
      */
-    public Task asyncAssignTexts (Collection<Glyph> glyphs,
-                                  final CreatorType textType,
-                                  final TextRole    textRole,
-                                  final String      textContent)
+    public Task<Void, Void> asyncAssignTexts (Collection<Glyph> glyphs,
+                                              TextRoleInfo roleInfo,
+                                              String textContent)
     {
-        return new TextTask(sheet, textType, textRole, textContent, glyphs).launch(
-            sheet);
+        return new TextTask(sheet, roleInfo, textContent, glyphs).
+                launch(sheet);
     }
 
     //-----------------------//
@@ -123,10 +118,11 @@ public class SymbolsController
     //-----------------------//
     /**
      * Asynchronously perform a modification in systems boundaries
+     *
      * @param modifiedLines the set of modified lines
      * @return the task that carries out the processing
      */
-    public Task asyncModifyBoundaries (Set<BrokenLine> modifiedLines)
+    public Task<Void, Void> asyncModifyBoundaries (Set<BrokenLine> modifiedLines)
     {
         List<BrokenLineContext> contexts = new ArrayList<>();
 
@@ -157,12 +153,12 @@ public class SymbolsController
     /**
      * Asynchronously segment a set of glyphs on their stems
      *
-     * @param glyphs glyphs to segment in order to retrieve stems
+     * @param glyphs  glyphs to segment in order to retrieve stems
      * @param isShort looking for short (or standard) stems
      * @return the task that carries out the processing
      */
-    public Task asyncSegment (Collection<Glyph> glyphs,
-                              final boolean     isShort)
+    public Task<Void, Void> asyncSegment (Collection<Glyph> glyphs,
+                                          boolean isShort)
     {
         return new SegmentTask(sheet, isShort, glyphs).launch(sheet);
     }
@@ -176,7 +172,7 @@ public class SymbolsController
      * @param glyphs the slur glyphs to fix
      * @return the task that carries out the processing
      */
-    public Task asyncTrimSlurs (Collection<Glyph> glyphs)
+    public Task<Void, Void> asyncTrimSlurs (Collection<Glyph> glyphs)
     {
         return new SlurTask(sheet, glyphs).launch(sheet);
     }
@@ -186,6 +182,7 @@ public class SymbolsController
     //----------//
     /**
      * Report the underlying model
+     *
      * @return the underlying glyphs model
      */
     @Override
@@ -217,7 +214,6 @@ public class SymbolsController
     @Override
     public String toString ()
     {
-        return getClass()
-                   .getSimpleName();
+        return getClass().getSimpleName();
     }
 }

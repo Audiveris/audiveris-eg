@@ -339,7 +339,6 @@ public class MainGui
             SwingUtilities.invokeLater(
                     new Runnable()
                     {
-
                         @Override
                         public void run ()
                         {
@@ -360,6 +359,7 @@ public class MainGui
                             frame.setTitle(sb.toString());
                         }
                     });
+
         } catch (Exception ex) {
             logger.warning(getClass().getName() + " onEvent error", ex);
         }

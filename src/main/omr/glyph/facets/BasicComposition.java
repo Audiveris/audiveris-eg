@@ -76,9 +76,9 @@ class BasicComposition extends BasicFacet implements GlyphComposition {
             throw new IllegalArgumentException("Cannot add a null section");
         }
 
-        if (!glyph.isTransient()) {
-            ////////////////////////////////////////////////////////////////////////////logger.severe("Adding section to registered glyph");
-        }
+//        if (!glyph.isTransient()) {
+//            logger.severe("Adding section to registered glyph");
+//        }
 
         // Nota: We must include the section in the glyph members before
         // linking back the section to the containing glyph.
@@ -137,10 +137,17 @@ class BasicComposition extends BasicFacet implements GlyphComposition {
     // dump //
     //------//
     @Override
-    public void dump() {
+    public void dump ()
+    {
         System.out.println("   members=" + members);
-        System.out.println("   partOf=" + partOf);
-        System.out.println("   result=" + glyph.getResult());
+        
+        if (partOf != null) {
+            System.out.println("   partOf=" + partOf);
+        }
+        
+        if (result != null) {
+            System.out.println("   result=" + result);
+        }
     }
 
     //----------------//

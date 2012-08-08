@@ -99,12 +99,12 @@ public class GlyphsController
      * @param glyphs   the collection of glyphs to be assigned
      * @param shape    the shape to be assigned
      * @param compound flag to build one compound, rather than assign each
-     * individual glyph
+     *                 individual glyph
      * @return the task that carries out the processing
      */
-    public Task asyncAssignGlyphs (Collection<Glyph> glyphs,
-                                   Shape shape,
-                                   boolean compound)
+    public Task<Void, Void> asyncAssignGlyphs (Collection<Glyph> glyphs,
+                                               Shape shape,
+                                               boolean compound)
     {
         // Safety check: we cannot alter virtual glyphs
         for (Glyph glyph : glyphs) {
@@ -117,7 +117,7 @@ public class GlyphsController
 
         if (ShapeSet.Barlines.contains(shape)
                 || Glyphs.containsBarline(glyphs)) {
-            // Special case for barlines
+            // Special case for barlines assignment or deassignment
             return new BarlineTask(sheet, shape, compound, glyphs).launch(
                     sheet);
         } else {
@@ -136,7 +136,7 @@ public class GlyphsController
      * @param glyphs the collection of glyphs to be de-assigned
      * @return the task that carries out the processing
      */
-    public Task asyncDeassignGlyphs (Collection<Glyph> glyphs)
+    public Task<Void, Void> asyncDeassignGlyphs (Collection<Glyph> glyphs)
     {
         return asyncAssignGlyphs(glyphs, null, false);
     }
@@ -144,7 +144,7 @@ public class GlyphsController
     //--------------------------//
     // asyncDeleteVirtualGlyphs //
     //--------------------------//
-    public Task asyncDeleteVirtualGlyphs (Collection<Glyph> glyphs)
+    public Task<Void, Void> asyncDeleteVirtualGlyphs (Collection<Glyph> glyphs)
     {
         return new DeleteTask(sheet, glyphs).launch(sheet);
     }
@@ -244,8 +244,7 @@ public class GlyphsController
     {
         final boolean compound = context.isCompound();
         final Shape shape = context.getAssignedShape();
-        logger.fine("syncAssign {0} compound:{1}", new Object[]{context,
-                                                                compound});
+        logger.fine("syncAssign {0} compound:{1}", context, compound);
 
         Set<Glyph> glyphs = context.getInitialGlyphs();
 
@@ -257,21 +256,15 @@ public class GlyphsController
                     compound,
                     Evaluation.MANUAL);
 
-            // Publish modifications
-            if (compound) {
-                publish(
-                        glyphs.iterator().next().getMembers().first().getGlyph());
-            } else {
-                Glyph glyph = glyphs.iterator().next();
-
-                if (glyph != null) {
-                    publish(glyph.getMembers().first().getGlyph());
-                }
+            // Publish modifications (about new glyph)
+            Glyph firstGlyph = glyphs.iterator().next();
+            if (firstGlyph != null) {
+                publish(firstGlyph.getMembers().first().getGlyph());
             }
         } else { // Deassignment
             model.deassignGlyphs(glyphs);
 
-            // Publish modifications
+            // Publish modifications (about current glyph)
             publish(glyphs.iterator().next());
         }
     }

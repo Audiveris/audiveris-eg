@@ -15,6 +15,7 @@ import omr.log.Logger;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.Locale;
 
 /**
  * Class {@code WellKnowns} gathers top public static final data to be
@@ -32,40 +33,37 @@ public class WellKnowns
     //----------//
     // IDENTITY //
     //----------//
-
-    /** Application version: {@value} */
-    public static final String TOOL_VERSION = "4.1beta";
-
+    
     /** Application name: {@value} */
     public static final String TOOL_NAME = "audiveris";
-
-    /** Application full name: {@value} */
-    public static final String TOOL_FULL_NAME = TOOL_NAME + "-" + TOOL_VERSION;
 
     /** Application company name: {@value} */
     public static final String TOOL_COMPANY = "AudiverisLtd";
 
     /** Specific prefix for application folders */
-    private static final String TOOL_PREFIX = "/" + TOOL_COMPANY + "/" +
-                                              TOOL_FULL_NAME;
+    private static final String TOOL_PREFIX = "/" + TOOL_COMPANY + "/"
+            + TOOL_NAME;
 
     //----------//
     // PLATFORM //
     //----------//
+    
+    /** Character encoding */
+    public static final String encoding = "UTF-8";
 
     /** Are we using a Linux OS? */
     public static final boolean LINUX = System.getProperty("os.name")
-                                              .toLowerCase()
+                                              .toLowerCase(Locale.ENGLISH)
                                               .startsWith("linux");
 
     /** Are we using a Mac OS? */
     public static final boolean MAC_OS_X = System.getProperty("os.name")
-                                                 .toLowerCase()
+                                                 .toLowerCase(Locale.ENGLISH)
                                                  .startsWith("mac os x");
 
     /** Are we using a Windows OS? */
     public static final boolean WINDOWS = System.getProperty("os.name")
-                                                .toLowerCase()
+                                                .toLowerCase(Locale.ENGLISH)
                                                 .startsWith("windows");
 
     /** Precise OS architecture */
@@ -80,7 +78,7 @@ public class WellKnowns
         "line.separator");
 
     /** Redirection, if any, of standard out and err stream */
-    public static String STD_OUT_ERROR = System.getProperty("stdouterr");
+    public static final String STD_OUT_ERROR = System.getProperty("stdouterr");
 
     //---------//
     // PROGRAM //
@@ -96,7 +94,9 @@ public class WellKnowns
     public static final File RES_FOLDER = new File(PROGRAM_FOLDER, "res");
 
     /** The folder where Tesseract OCR material is stored */
-    public static final File OCR_FOLDER = new File(PROGRAM_FOLDER, "ocr");
+    public static final File OCR_FOLDER = LINUX
+                                          ? new File("/usr/local/share")
+                                          : new File(PROGRAM_FOLDER, "ocr");
 
     /** The folder where documentations files are stored */
     public static final File DOC_FOLDER = new File(PROGRAM_FOLDER, "www");
@@ -108,10 +108,13 @@ public class WellKnowns
     // CONFIG //
     //--------//
 
+    /** The folder where user specific data is stored */
+    public static final File USER_FOLDER = getUserConfigFolder();
+
     /** Base folder for config */
     private static final File CONFIG_FOLDER = getConfigFolder();
 
-    /** The folder where configuration data is stored */
+    /** The folder where global configuration data is stored */
     public static final File SETTINGS_FOLDER = new File(
         CONFIG_FOLDER,
         "settings");
@@ -177,6 +180,15 @@ public class WellKnowns
     public static final File DEFAULT_SCORES_FOLDER = new File(
         DATA_FOLDER,
         "scores");
+    
+    //~ Constructors -----------------------------------------------------------
+    
+    //------------//
+    // WellKnowns // Not meant to be instantiated
+    //------------//
+    private WellKnowns ()
+    {
+    }
 
     //~ Methods ----------------------------------------------------------------
 
@@ -230,11 +242,21 @@ public class WellKnowns
         if (isProject) {
             // For development environment CONFIG = DATA = PROGRAM
             return PROGRAM_FOLDER;
+        } else {
+            // Standard case: config data is in user appdata
+            return USER_FOLDER;
         }
+    }
 
+    //---------------------//
+    // getUserConfigFolder //
+    //---------------------//
+    private static File getUserConfigFolder ()
+    {
         if (WINDOWS) {
-            return getDataFolder();
+            return getUserDataFolder();
         } else if (MAC_OS_X) {
+        	// temporary make it work for debuging on ios
         	String config = System.getenv("XDG_CONFIG_HOME");
             if (config != null) {
                 return new File(config + System.getProperty("user.dir"));
@@ -275,8 +297,15 @@ public class WellKnowns
         if (isProject) {
             // For development environment CONFIG = DATA = PROGRAM
             return PROGRAM_FOLDER;
-        }
+        } else 
+            return getUserDataFolder();
+    }
 
+    //-------------------//
+    // getUserDataFolder //
+    //-------------------//
+    private static File getUserDataFolder ()
+    {
         if (WINDOWS) {
             String appdata = System.getenv("APPDATA");
 
@@ -287,6 +316,7 @@ public class WellKnowns
             throw new RuntimeException(
                 "APPDATA environment variable is not set");
         } else if (MAC_OS_X) {
+        	// temporary make it work for debuging on ios
           	 String data = System.getenv("XDG_DATA_HOME");
 
              if (data != null) {
@@ -358,20 +388,19 @@ public class WellKnowns
         final String LOGGING_NAME = "logging.properties";
 
         // Set logging configuration file (if none already defined)
-        if (System.getProperty(LOGGING_KEY) == null) {
+        final String loggingProp = System.getProperty(LOGGING_KEY);
+        if (loggingProp == null) {
             // Check for a user file
             File loggingFile = new File(SETTINGS_FOLDER, LOGGING_NAME);
 
             if (loggingFile.exists()) {
                 System.setProperty(LOGGING_KEY, loggingFile.toString());
             }
+        } else {
+            System.out.println("Logging already defined by " + loggingProp);
         }
 
         /** Set up logger mechanism */
         Logger.getLogger(WellKnowns.class);
-    }
-
-    private WellKnowns ()
-    {
     }
 }

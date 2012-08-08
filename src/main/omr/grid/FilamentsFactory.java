@@ -82,7 +82,7 @@ public class FilamentsFactory
     private final Orientation orientation;
 
     /** Precise constructor for filaments */
-    private final Constructor filamentConstructor;
+    private final Constructor<?> filamentConstructor;
 
     private final Object[] scaleArgs;
 
@@ -117,7 +117,7 @@ public class FilamentsFactory
 
         scaleArgs = new Object[]{scale};
         filamentConstructor = filamentClass.getConstructor(
-                new Class[]{Scale.class});
+                new Class<?>[]{Scale.class});
 
         params = new Parameters();
         params.initialize();
@@ -216,7 +216,7 @@ public class FilamentsFactory
      *
      * @param source       the section source for filaments
      * @param useExpansion true to expand filaments with short sections left
-     * over
+     *                     over
      * @return the collection of retrieved filaments
      */
     public List<Glyph> retrieveFilaments (Collection<Section> source,
@@ -229,9 +229,8 @@ public class FilamentsFactory
             watch.start("createFilaments");
             createFilaments(source);
 
-            logger.fine(
-                    "{0} {1} filaments created.",
-                    new Object[]{orientation, filaments.size()});
+            logger.fine("{0} {1} filaments created.",
+                        orientation, filaments.size());
 
             // Merge filaments into larger filaments
             watch.start("mergeFilaments");
@@ -463,7 +462,8 @@ public class FilamentsFactory
 
                     if (posGap > params.maxOverlapDeltaPos) {
                         if (logger.isFineEnabled() || areVips) {
-                            logger.info(
+                            logger.
+                                    info(
                                     "{0}Delta pos too high for overlap: {1} vs {2}",
                                     new Object[]{
                                         vips, posGap, params.maxOverlapDeltaPos
@@ -497,7 +497,8 @@ public class FilamentsFactory
                     if ((-coordGap <= params.maxInvolvingLength)
                             && (thickness > maxConsistentThickness)) {
                         if (logger.isFineEnabled() || areVips) {
-                            logger.info(
+                            logger.
+                                    info(
                                     "{0}Non consistent thickness: {1} vs {2} {3} {4}",
                                     new Object[]{
                                         vips, (float) thickness,
@@ -823,7 +824,7 @@ public class FilamentsFactory
                                         || candidate.isVip()) {
                                     logger.info(
                                             "Merged {0} into {1}",
-                                            new Object[]{candidate, head});
+                                            candidate, head);
 
                                     if (candidate.isVip()) {
                                         head.setVip();
@@ -845,7 +846,7 @@ public class FilamentsFactory
                             if (head.isVip() && candidate.isVip()) {
                                 logger.info(
                                         "No intersection between {0} and {1}",
-                                        new Object[]{candidate, head});
+                                        candidate, head);
                             }
                         }
                     }

@@ -15,7 +15,6 @@ import omr.log.Logger;
 
 import omr.score.Score;
 
-import omr.step.Step;
 import omr.step.Stepping;
 import omr.step.Steps;
 
@@ -25,12 +24,13 @@ import omr.util.FileUtil;
 import org.jdesktop.application.Task;
 
 import java.io.*;
-import java.util.Collections;
 import java.util.List;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import omr.WellKnowns;
 
 /**
  * Class {@code Plugin} describes a plugin instance, encapsulating the
@@ -85,6 +85,7 @@ public class Plugin
      * @param file related javascript file
      */
     public Plugin (File file)
+            throws JavascriptUnavailableException
     {
         this.file = file;
 
@@ -133,7 +134,7 @@ public class Plugin
      *
      * @param score the score to process through this plugin
      */
-    public Task getTask (Score score)
+    public Task<Void, Void> getTask (Score score)
     {
         return new PluginTask(score);
     }
@@ -161,12 +162,7 @@ public class Plugin
     public Void runPlugin (Score score)
     {
         // Make sure we have the export file
-        Step exportStep = Steps.valueOf(Steps.EXPORT);
-
-        if (!score.getFirstPage().getSheet().isDone(exportStep)) {
-            logger.info("Getting export from {0} ...", score);
-            Stepping.processScore(Collections.singleton(exportStep), score);
-        }
+        Stepping.ensureScoreStep(Steps.valueOf(Steps.EXPORT), score);
 
         final File exportFile = score.getExportFile();
 
@@ -188,27 +184,30 @@ public class Plugin
                     "pluginCli",
                     exportFile.getAbsolutePath());
 
-            args = (List<String>) obj; // Unchecked by compiler
-
-            logger.fine("{0} command args: {1}", new Object[]{Plugin.this,
-                                                              args});
-        } catch (Exception ex) {
+            if (obj instanceof List) {
+                args = (List<String>) obj; // Unchecked by compiler
+                logger.fine("{0} command args: {1}", Plugin.this, args);
+            } else {
+                return null;
+            }
+        } catch (ScriptException | NoSuchMethodException ex) {
             logger.warning(Plugin.this + " error invoking javascript", ex);
 
             return null;
         }
 
         // Spawn the command
+        logger.info("Launching {0} on {1}",
+                    new Object[]{Plugin.this.getTitle(), score.getRadix()});
+
+        ProcessBuilder pb = new ProcessBuilder(args);
+        pb = pb.redirectErrorStream(true);
+
         try {
-            logger.info("Launching {0} on {1}",
-                        new Object[]{Plugin.this.getTitle(), score.getRadix()});
-
-            ProcessBuilder pb = new ProcessBuilder(args);
-            pb = pb.redirectErrorStream(true);
-
             Process process = pb.start();
             InputStream is = process.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
+            InputStreamReader isr = new InputStreamReader(is,
+                                                          WellKnowns.encoding);
             BufferedReader br = new BufferedReader(isr);
 
             // Consume process output
@@ -262,20 +261,26 @@ public class Plugin
      * Evaluate the plugin script to get precise information built.
      */
     private void evaluateScript ()
+            throws JavascriptUnavailableException
     {
         ScriptEngineManager mgr = new ScriptEngineManager();
         engine = mgr.getEngineByName("JavaScript");
 
-        try {
-            InputStream is = new FileInputStream(file);
-            Reader reader = new InputStreamReader(is);
-            engine.eval(reader);
+        if (engine != null) {
+            try {
+                InputStream is = new FileInputStream(file);
+                Reader reader = new InputStreamReader(is, WellKnowns.encoding);
+                engine.eval(reader);
 
-            // Retrieve information from script
-            title = (String) engine.get("pluginTitle");
-            tip = (String) engine.get("pluginTip");
-        } catch (Exception ex) {
-            logger.warning(this + " error", ex);
+                // Retrieve information from script
+                title = (String) engine.get("pluginTitle");
+                tip = (String) engine.get("pluginTip");
+            } catch (FileNotFoundException | UnsupportedEncodingException |
+                     ScriptException ex) {
+                logger.warning(this + " error", ex);
+            }
+        } else {
+            throw new JavascriptUnavailableException();
         }
     }
 

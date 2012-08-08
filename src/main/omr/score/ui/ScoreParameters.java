@@ -13,7 +13,7 @@ package omr.score.ui;
 
 import omr.constant.ConstantSet;
 
-import omr.glyph.text.Language;
+import omr.text.Language;
 
 import omr.log.Logger;
 
@@ -31,6 +31,9 @@ import omr.sheet.Sheet;
 import omr.step.Step;
 import omr.step.Steps;
 
+import omr.text.OCR.UnavailableOcrException;
+import omr.text.TextBuilder;
+
 import omr.ui.FileDropHandler;
 import omr.ui.field.LDoubleField;
 import omr.ui.field.LIntegerField;
@@ -46,7 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-import java.util.logging.Level;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -60,10 +62,11 @@ import javax.swing.event.ChangeListener;
 /**
  * Class {@code ScoreParameters} is a dialog that manages information
  * as both a display and possible input from user for major Score/Sheet
- * parameters such as:<ul>
+ * parameters such as:
+ * <ul>
  * <li>Call-stack printed on exception</li>
  * <li>Prompt for saving script on closing</li>
- * <li>Step trigerred by drag and drop</li>
+ * <li>Step triggerred by drag and drop</li>
  * <li>Max value for foreground pixels</li>
  * <li>Histogram threshold for staff lines detection</li>
  * <li>Abscissa margin for time slots</li>
@@ -84,10 +87,9 @@ public class ScoreParameters
 
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(
-        ScoreParameters.class);
+            ScoreParameters.class);
 
     //~ Instance fields --------------------------------------------------------
-
     /** The swing component of this panel */
     private final Panel component;
 
@@ -101,12 +103,12 @@ public class ScoreParameters
     private ParametersTask task;
 
     //~ Constructors -----------------------------------------------------------
-
     //-----------------//
     // ScoreParameters //
     //-----------------//
     /**
      * Create a ScoreParameters object.
+     *
      * @param score the related score
      */
     public ScoreParameters (Score score)
@@ -121,10 +123,19 @@ public class ScoreParameters
         panes.add(new DnDPane());
         panes.add(new ForegroundPane());
         panes.add(new SlotPane());
-        panes.add(new LanguagePane());
 
-        //        panes.add(new VolumePane());
-        //        panes.add(new TempoPane());
+        // Caution: The language pane needs Tesseract up & running
+        try {
+            panes.add(new LanguagePane());
+        } catch (UnavailableOcrException ex) {
+            logger.info("No language pane for lack of OCR");
+        } catch (Throwable ex) {
+            logger.warning("Error creating language pane", ex);
+        }
+
+        ///        panes.add(new VolumePane());
+        ///        panes.add(new TempoPane());
+
         if ((score != null) && (score.getPartList() != null)) {
             // Part by part information
             panes.add(new ScorePane());
@@ -144,12 +155,12 @@ public class ScoreParameters
     }
 
     //~ Methods ----------------------------------------------------------------
-
     //--------//
     // commit //
     //--------//
     /**
      * Check the values and commit them if all are OK.
+     *
      * @param sheet the related sheet
      * @return true if committed, false otherwise
      */
@@ -183,6 +194,7 @@ public class ScoreParameters
     //--------------//
     /**
      * Report the UI component.
+     *
      * @return the concrete component
      */
     public JPanel getComponent ()
@@ -196,6 +208,7 @@ public class ScoreParameters
     /**
      * Make sure every user-entered data is valid, and while doing so,
      * feed a ParametersTask to be run on the related score/sheet
+     *
      * @return true if everything is OK, false otherwise
      */
     private boolean dataIsValid ()
@@ -225,12 +238,12 @@ public class ScoreParameters
             logicalRowCount += pane.getLogicalRowCount();
         }
 
-        FormLayout   layout = Panel.makeFormLayout(logicalRowCount, 3);
+        FormLayout layout = Panel.makeFormLayout(logicalRowCount, 3);
         PanelBuilder builder = new PanelBuilder(layout, getComponent());
         builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
-        int             r = 1;
+        int r = 1;
 
         for (Pane pane : panes) {
             if (pane.getLabel() != null) {
@@ -243,7 +256,6 @@ public class ScoreParameters
     }
 
     //~ Inner Classes ----------------------------------------------------------
-
     //-------------//
     // BooleanPane //
     //-------------//
@@ -251,7 +263,7 @@ public class ScoreParameters
      * A template for pane with just one global boolean.
      */
     private abstract static class BooleanPane
-        extends Pane
+            extends Pane
     {
         //~ Instance fields ----------------------------------------------------
 
@@ -259,10 +271,9 @@ public class ScoreParameters
         protected final JCheckBox promptBox = new JCheckBox();
 
         //~ Constructors -------------------------------------------------------
-
-        public BooleanPane (String  label,
-                            String  text,
-                            String  tip,
+        public BooleanPane (String label,
+                            String text,
+                            String tip,
                             boolean selected)
         {
             super(label);
@@ -273,11 +284,10 @@ public class ScoreParameters
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             builder.add(promptBox, cst.xyw(3, r, 3));
 
@@ -292,7 +302,7 @@ public class ScoreParameters
      * A pane with a checkBox to set parameter as a global default.
      */
     private abstract class DefaultPane
-        extends Pane
+            extends Pane
     {
         //~ Instance fields ----------------------------------------------------
 
@@ -300,25 +310,23 @@ public class ScoreParameters
         protected final JCheckBox defaultBox = new JCheckBox();
 
         //~ Constructors -------------------------------------------------------
-
         public DefaultPane (String label)
         {
             super(label);
 
             defaultBox.setText("Set as default");
             defaultBox.setToolTipText(
-                "Check to set parameter as global default");
+                    "Check to set parameter as global default");
 
             // If no current score, push for a global setting
             defaultBox.setSelected(score == null);
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             builder.add(defaultBox, cst.xyw(3, r, 3));
 
@@ -333,35 +341,32 @@ public class ScoreParameters
      * Pane to define the upper limit for foreground pixels.
      */
     private class ForegroundPane
-        extends SliderPane
+            extends SliderPane
     {
         //~ Constructors -------------------------------------------------------
 
         public ForegroundPane ()
         {
             super(
-                "Foreground Pixels",
-                new LIntegerField(
+                    "Foreground Pixels",
+                    new LIntegerField(
                     false,
                     "Level",
                     "Max level for foreground pixels"),
-                0,
-                255,
-                ((score != null) &&
-                                score.getFirstPage()
-                                     .getSheet()
-                                     .hasMaxForeground())
-                                ? score.getFirstPage().getSheet().getMaxForeground()
-                                : Sheet.getDefaultMaxForeground());
+                    0,
+                    255,
+                    ((score != null)
+                     && score.getFirstPage().getSheet().hasMaxForeground())
+                    ? score.getFirstPage().getSheet().getMaxForeground()
+                    : Sheet.getDefaultMaxForeground());
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
-            if (defaultBox.isSelected() &&
-                (intValue() != Sheet.getDefaultMaxForeground())) {
+            if (defaultBox.isSelected()
+                    && (intValue() != Sheet.getDefaultMaxForeground())) {
                 Sheet.setDefaultMaxForeground(intValue());
                 logger.info("Default max foreground is now {0}", intValue());
             }
@@ -397,14 +402,12 @@ public class ScoreParameters
         protected final String label;
 
         //~ Constructors -------------------------------------------------------
-
         public Pane (String label)
         {
             this.label = label;
         }
 
         //~ Methods ------------------------------------------------------------
-
         /**
          * Commit the modifications, for the items that are not handled
          * by the ParametersTask, which means all actions related to
@@ -416,14 +419,15 @@ public class ScoreParameters
 
         /**
          * Build the related user interface
+         *
          * @param builder the shared panel builder
-         * @param cst the cell constraints
-         * @param r initial row value
+         * @param cst     the cell constraints
+         * @param r       initial row value
          * @return final row value
          */
-        public abstract int defineLayout (PanelBuilder    builder,
+        public abstract int defineLayout (PanelBuilder builder,
                                           CellConstraints cst,
-                                          int             r);
+                                          int r);
 
         /** Report the separator label if any */
         public String getLabel ()
@@ -443,6 +447,7 @@ public class ScoreParameters
         /**
          * Check whether all the pane data are valid, and feed the
          * ParametersTask accordingly
+         *
          * @return true if everything is OK, false otherwise
          */
         public boolean isValid ()
@@ -455,14 +460,14 @@ public class ScoreParameters
     // Constants //
     //-----------//
     private static final class Constants
-        extends ConstantSet
+            extends ConstantSet
     {
         //~ Instance fields ----------------------------------------------------
 
         /** Maximum value for slot margin */
         final Scale.Fraction maxSlotMargin = new Scale.Fraction(
-            2.5,
-            "Maximum value for slot margin");
+                2.5,
+                "Maximum value for slot margin");
     }
 
     //----------//
@@ -472,34 +477,32 @@ public class ScoreParameters
      * Pane for details of one part
      */
     private class PartPane
-        extends Panel
+            extends Panel
     {
         //~ Static fields/initializers -----------------------------------------
 
-        public static final int   logicalRowCount = 3;
+        public static final int logicalRowCount = 3;
 
         //~ Instance fields ----------------------------------------------------
-
-        /** The underlying model  */
+        /** The underlying model */
         private final ScorePart scorePart;
 
         /** Id of the part */
         private final LTextField id = new LTextField(
-            false,
-            "Id",
-            "Id of the score part");
+                false,
+                "Id",
+                "Id of the score part");
 
         /** Name of the part */
         private LTextField name = new LTextField(
-            "Name",
-            "Name for the score part");
+                "Name",
+                "Name for the score part");
 
         /** Midi Instrument */
         private JComboBox<String> midiBox = new JComboBox<>(
-            MidiAbstractions.getProgramNames());
+                MidiAbstractions.getProgramNames());
 
         //~ Constructors -------------------------------------------------------
-
         //----------//
         // PartPane //
         //----------//
@@ -512,8 +515,8 @@ public class ScoreParameters
 
             // Initial setting for part name
             name.setText(
-                (scorePart.getName() != null) ? scorePart.getName()
-                                : scorePart.getDefaultName());
+                    (scorePart.getName() != null) ? scorePart.getName()
+                    : scorePart.getDefaultName());
 
             // Initial setting for part midi program
             int prog = (scorePart.getMidiProgram() != null)
@@ -523,16 +526,13 @@ public class ScoreParameters
         }
 
         //~ Methods ------------------------------------------------------------
-
         //-----------//
         // checkPart //
         //-----------//
         public boolean checkPart ()
         {
             // Part name
-            if (name.getText()
-                    .trim()
-                    .length() == 0) {
+            if (name.getText().trim().length() == 0) {
                 logger.warning("Please supply a non empty part name");
 
                 return false;
@@ -546,13 +546,13 @@ public class ScoreParameters
         //--------------//
         // defineLayout //
         //--------------//
-        private int defineLayout (PanelBuilder    builder,
+        private int defineLayout (PanelBuilder builder,
                                   CellConstraints cst,
-                                  int             r)
+                                  int r)
         {
             builder.addSeparator(
-                "Part #" + scorePart.getId(),
-                cst.xyw(1, r, 11));
+                    "Part #" + scorePart.getId(),
+                    cst.xyw(1, r, 11));
 
             r += 2; // --
 
@@ -579,21 +579,20 @@ public class ScoreParameters
      * closed?.
      */
     private static class ScriptPane
-        extends BooleanPane
+            extends BooleanPane
     {
         //~ Constructors -------------------------------------------------------
 
         public ScriptPane ()
         {
             super(
-                "Script",
-                "Prompt for save",
-                "Should we prompt for saving the script on score closing",
-                ScriptActions.isConfirmOnClose());
+                    "Script",
+                    "Prompt for save",
+                    "Should we prompt for saving the script on score closing",
+                    ScriptActions.isConfirmOnClose());
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
@@ -609,21 +608,20 @@ public class ScoreParameters
      * occurs.
      */
     private static class StackPane
-        extends BooleanPane
+            extends BooleanPane
     {
         //~ Constructors -------------------------------------------------------
 
         public StackPane ()
         {
             super(
-                "Call-Stack",
-                "Print call-stack",
-                "Should we print the call-stack when an exception occurs",
-                Logger.isPrintStackOnWarning());
+                    "Call-Stack",
+                    "Print call-stack",
+                    "Should we print the call-stack when an exception occurs",
+                    Logger.isPrintStackOnWarning());
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
@@ -638,7 +636,7 @@ public class ScoreParameters
      * Which step should we trigger on Drag n' Drop?.
      */
     private class DnDPane
-        extends Pane
+            extends Pane
     {
         //~ Instance fields ----------------------------------------------------
 
@@ -646,37 +644,35 @@ public class ScoreParameters
         final JComboBox<Step> stepCombo;
 
         //~ Constructors -------------------------------------------------------
-
         public DnDPane ()
         {
             super("Drag n' Drop");
 
             // ComboBox for triggered step
             stepCombo = new JComboBox<>(
-                Steps.values().toArray(new Step[0]));
+                    Steps.values().toArray(new Step[0]));
             stepCombo.setToolTipText("Step to trigger on Drag n' Drop");
             stepCombo.setSelectedItem(FileDropHandler.getDefaultStep());
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
             /** Since this info is not registered in the ParametersTask */
-            Step step = (Step) stepCombo.getItemAt(
-                stepCombo.getSelectedIndex());
+            Step step = stepCombo.getItemAt(
+                    stepCombo.getSelectedIndex());
             FileDropHandler.setDefaultStep(step);
         }
 
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             JLabel stepLabel = new JLabel(
-                "Triggered step",
-                SwingConstants.RIGHT);
+                    "Triggered step",
+                    SwingConstants.RIGHT);
             builder.add(stepLabel, cst.xyw(5, r, 3));
             builder.add(stepCombo, cst.xyw(9, r, 3));
 
@@ -691,15 +687,14 @@ public class ScoreParameters
      * Pane to set the dominant text language.
      */
     private class LanguagePane
-        extends DefaultPane
+            extends DefaultPane
     {
         //~ Instance fields ----------------------------------------------------
 
         /** ComboBox for text language */
-        final JComboBox langCombo;
+        final JComboBox<String> langCombo;
 
         //~ Constructors -------------------------------------------------------
-
         public LanguagePane ()
         {
             super("Text");
@@ -709,18 +704,15 @@ public class ScoreParameters
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
             if (defaultBox.isSelected()) {
                 // Make the selected language the global default
-                String item = (String) langCombo.getItemAt(
-                    langCombo.getSelectedIndex());
+                String item = langCombo.getItemAt(langCombo.getSelectedIndex());
                 String code = codeOf(item);
 
-                if (!Language.getDefaultLanguage()
-                             .equals(code)) {
+                if (!Language.getDefaultLanguage().equals(code)) {
                     logger.info("Default language is now ''{0}''", code);
                     Language.setDefaultLanguage(code);
                 }
@@ -728,9 +720,9 @@ public class ScoreParameters
         }
 
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             r = super.defineLayout(builder, cst, r);
 
@@ -744,8 +736,7 @@ public class ScoreParameters
         @Override
         public boolean isValid ()
         {
-            String item = (String) langCombo.getItemAt(
-                langCombo.getSelectedIndex());
+            String item = langCombo.getItemAt(langCombo.getSelectedIndex());
             task.setLanguage(codeOf(item));
 
             return true;
@@ -758,18 +749,18 @@ public class ScoreParameters
         }
 
         /** Create a combo box filled with supported language items */
-        private JComboBox createLangCombo ()
+        private JComboBox<String> createLangCombo ()
         {
             // Build the item list, only with the supported languages
             List<String> items = new ArrayList<>();
 
             for (String code : new TreeSet<>(
-                Language.getSupportedLanguages())) {
+                    TextBuilder.getOcr().getLanguages())) {
                 items.add(itemOf(code));
             }
 
             JComboBox<String> combo = new JComboBox<>(
-                items.toArray(new String[items.size()]));
+                    items.toArray(new String[items.size()]));
             combo.setToolTipText("Dominant language for textual items");
 
             final String code = ((score != null) && score.hasLanguage())
@@ -786,7 +777,7 @@ public class ScoreParameters
             String fullName = Language.nameOf(code);
 
             if (fullName != null) {
-                return code + " - " + fullName;
+                return code + " (" + fullName + ")";
             } else {
                 return code;
             }
@@ -969,7 +960,6 @@ public class ScoreParameters
     //            }
     //        }
     //    }
-
     //-----------//
     // ScorePane //
     //-----------//
@@ -977,7 +967,7 @@ public class ScoreParameters
      * Pane to define the details for each part.
      */
     private class ScorePane
-        extends Pane
+            extends Pane
     {
         //~ Instance fields ----------------------------------------------------
 
@@ -985,18 +975,16 @@ public class ScoreParameters
         private final Map<ScorePart, PartPane> partPanes = new HashMap<>();
 
         //~ Constructors -------------------------------------------------------
-
         public ScorePane ()
         {
             super(null);
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             for (ScorePart scorePart : score.getPartList()) {
                 PartPane partPane = new PartPane(scorePart);
@@ -1012,8 +1000,7 @@ public class ScoreParameters
         @Override
         public int getLogicalRowCount ()
         {
-            return PartPane.logicalRowCount * score.getPartList()
-                                                   .size();
+            return PartPane.logicalRowCount * score.getPartList().size();
         }
 
         @Override
@@ -1040,15 +1027,14 @@ public class ScoreParameters
      * SetAsDefault box.
      */
     private class SliderPane
-        extends DefaultPane
-        implements ChangeListener
+            extends DefaultPane
+            implements ChangeListener
     {
         //~ Static fields/initializers -----------------------------------------
 
         protected static final int FACTOR = 100;
 
         //~ Instance fields ----------------------------------------------------
-
         /** Slider */
         protected final JSlider slider;
 
@@ -1056,21 +1042,20 @@ public class ScoreParameters
         protected final LTextField numValue;
 
         //~ Constructors -------------------------------------------------------
-
-        public SliderPane (String       separator,
+        public SliderPane (String separator,
                            LDoubleField numValue,
-                           int          minNumValue,
-                           int          maxNumValue,
-                           double       initValue)
+                           int minNumValue,
+                           int maxNumValue,
+                           double initValue)
         {
             super(separator);
 
             // Slider
             slider = new JSlider(
-                JSlider.HORIZONTAL,
-                minNumValue,
-                maxNumValue,
-                (int) (initValue * FACTOR));
+                    JSlider.HORIZONTAL,
+                    minNumValue,
+                    maxNumValue,
+                    (int) (initValue * FACTOR));
 
             // Numeric value
             this.numValue = numValue;
@@ -1079,20 +1064,20 @@ public class ScoreParameters
             commonInit();
         }
 
-        public SliderPane (String        separator,
+        public SliderPane (String separator,
                            LIntegerField numValue,
-                           int           minNumValue,
-                           int           maxNumValue,
-                           int           initValue)
+                           int minNumValue,
+                           int maxNumValue,
+                           int initValue)
         {
             super(separator);
 
             // Slider
             slider = new JSlider(
-                JSlider.HORIZONTAL,
-                minNumValue,
-                maxNumValue,
-                initValue);
+                    JSlider.HORIZONTAL,
+                    minNumValue,
+                    maxNumValue,
+                    initValue);
 
             // Numeric value
             this.numValue = numValue;
@@ -1102,11 +1087,10 @@ public class ScoreParameters
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             r = super.defineLayout(builder, cst, r);
             builder.add(numValue.getLabel(), cst.xy(9, r));
@@ -1160,45 +1144,44 @@ public class ScoreParameters
      * Pane to define the abscissa margin around a common time slot.
      */
     private class SlotPane
-        extends SliderPane
+            extends SliderPane
     {
         //~ Instance fields ----------------------------------------------------
 
         /** ComboBox for Slot policy */
-        final JComboBox policyCombo;
+        final JComboBox<SlotPolicy> policyCombo;
 
         /** Set as default? */
         final JCheckBox policyDefaultBox = new JCheckBox();
 
         //~ Constructors -------------------------------------------------------
-
         public SlotPane ()
         {
             super(
-                "Time Slots",
-                new LDoubleField(
+                    "Time Slots",
+                    new LDoubleField(
                     false,
                     "Margin",
                     "Horizontal margin around Slots, in interline fractions",
                     "%.2f"),
-                0,
-                (int) (constants.maxSlotMargin.getValue() * 100),
-                ((score != null) && score.hasSlotMargin())
-                                ? score.getSlotMargin()
-                                : Score.getDefaultSlotMargin());
+                    0,
+                    (int) (constants.maxSlotMargin.getValue() * 100),
+                    ((score != null) && score.hasSlotMargin())
+                    ? score.getSlotMargin()
+                    : Score.getDefaultSlotMargin());
             policyCombo = createPolicyCombo();
             policyDefaultBox.setText("Set as default");
             policyDefaultBox.setToolTipText(
-                "Check to set parameter as global default");
+                    "Check to set parameter as global default");
             defaultBox.setSelected(score == null);
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         public void commit ()
         {
-            SlotPolicy policy = (SlotPolicy) policyCombo.getSelectedItem();
+            SlotPolicy policy = policyCombo.getItemAt(
+                    policyCombo.getSelectedIndex());
 
             if (policyDefaultBox.isSelected()) {
                 logger.info("Default slot policy is now {0}", policy);
@@ -1207,17 +1190,17 @@ public class ScoreParameters
 
             double val = dblValue();
 
-            if (defaultBox.isSelected() &&
-                (Math.abs(Score.getDefaultSlotMargin() - val) > .001)) {
+            if (defaultBox.isSelected()
+                    && (Math.abs(Score.getDefaultSlotMargin() - val) > .001)) {
                 logger.info("Default slot margin is now {0}", val);
                 Score.setDefaultSlotMargin(val);
             }
         }
 
         @Override
-        public int defineLayout (PanelBuilder    builder,
+        public int defineLayout (PanelBuilder builder,
                                  CellConstraints cst,
-                                 int             r)
+                                 int r)
         {
             builder.add(policyDefaultBox, cst.xyw(3, r, 3));
 
@@ -1245,21 +1228,20 @@ public class ScoreParameters
         }
 
         /** Create a combo box filled with Slot Policy items */
-        private JComboBox createPolicyCombo ()
+        private JComboBox<SlotPolicy> createPolicyCombo ()
         {
             JComboBox<SlotPolicy> combo = new JComboBox<>(
-                SlotPolicy.values());
+                    SlotPolicy.values());
             combo.setToolTipText("Policy to determine time slots");
 
             combo.setSelectedItem(
-                ((score != null) && score.hasSlotPolicy())
-                                ? score.getSlotPolicy()
-                                : Score.getDefaultSlotPolicy());
+                    ((score != null) && score.hasSlotPolicy())
+                    ? score.getSlotPolicy()
+                    : Score.getDefaultSlotPolicy());
 
             return combo;
         }
     }
-
     //
     //    //-----------//
     //    // TempoPane //

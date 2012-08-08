@@ -43,6 +43,7 @@ public class Steps
     public static final String             GRID = "GRID";
     public static final String             SYSTEMS = "SYSTEMS";
     public static final String             MEASURES = "MEASURES";
+    public static final String             TEXTS = "TEXTS";
     public static final String             STICKS = "STICKS";
     public static final String             SYMBOLS = "SYMBOLS";
     public static final String             PAGES = "PAGES";
@@ -69,6 +70,7 @@ public class Steps
         addStep(new GridStep());
         addStep(new SystemsStep());
         addStep(new MeasuresStep());
+        addStep(new TextsStep());
         addStep(new SticksStep());
         addStep(new SymbolsStep());
         addStep(new PagesStep());
@@ -109,6 +111,13 @@ public class Steps
     /** Last step */
     public static final Step last = steps.listIterator(steps.size())
                                          .previous();
+
+    //-------//
+    // Steps // Not meant to be instantiated
+    //-------//
+    private Steps ()
+    {
+    }
 
     //~ Methods ----------------------------------------------------------------
 
@@ -300,9 +309,5 @@ public class Steps
         {
             return valueOf(str);
         }
-    }
-
-    private Steps ()
-    {
     }
 }

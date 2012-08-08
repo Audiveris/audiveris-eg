@@ -65,7 +65,8 @@ public class SheetsController
             SheetsController.class);
 
     /** Events that can be published on sheet service */
-    private static final Class[] eventsWritten = new Class[]{SheetEvent.class};
+    private static final Class<?>[] eventsWritten = new Class<?>[]{
+        SheetEvent.class};
 
     /** The single instance of this class */
     private static volatile SheetsController INSTANCE;
@@ -149,7 +150,6 @@ public class SheetsController
                     null,
                     comp,
                     sheet.getScore().getImagePath());
-            sheetIndex = tabbedPane.indexOfComponent(assembly.getComponent());
         }
     }
 
@@ -364,7 +364,7 @@ public class SheetsController
      *
      * @param subscriber The subscriber to accept the events when published.
      */
-    public void subscribe (EventSubscriber subscriber)
+    public void subscribe (EventSubscriber<SheetEvent> subscriber)
     {
         sheetService.subscribeStrongly(SheetEvent.class, subscriber);
     }
@@ -377,7 +377,7 @@ public class SheetsController
      *
      * @param subscriber the entity to unsubscribe
      */
-    public void unsubscribe (EventSubscriber subscriber)
+    public void unsubscribe (EventSubscriber<SheetEvent> subscriber)
     {
         sheetService.unsubscribe(SheetEvent.class, subscriber);
     }
@@ -433,7 +433,6 @@ public class SheetsController
     {
         //~ Instance fields ----------------------------------------------------
 
-        /** Initial zoom ratio for displayed sheet pictures */
         Constant.Ratio initialZoomRatio = new Constant.Ratio(
                 0.5,
                 "Initial zoom ratio for displayed sheet pictures");

@@ -158,9 +158,9 @@ public class Main
 
             // At this point all tasks have completed (normally or not)
             // So shutdown immediately the executors
-//            logger.info("SHUTTING DOWN ...");
-//            OmrExecutors.shutdown(true);
-            
+
+            OmrExecutors.shutdown(true);
+
             // Store latest constant values on disk?
             if (constants.persistBatchCliConstants.getValue()) {
                 ConstantManager.getInstance().storeResource();
@@ -236,14 +236,14 @@ public class Main
             tasks.add(
                     new Callable<Void>()
                     {
-
                         @Override
                         public Void call ()
                                 throws Exception
                         {
-                            logger.info(
-                                    "Launching {0} on {1}",
-                                    new Object[]{parameters.desiredSteps, name});
+                            if (!parameters.desiredSteps.isEmpty()) {
+                                logger.info("Launching {0} on {1}",
+                                            parameters.desiredSteps, name);
+                            }
 
                             if (file.exists()) {
                                 final Score score = new Score(file);
@@ -338,7 +338,6 @@ public class Main
             tasks.add(
                     new Callable<Void>()
                     {
-
                         @Override
                         public Void call ()
                                 throws Exception
@@ -449,9 +448,12 @@ public class Main
     //------------//
     private static void initialize ()
     {
+        // (re) Open the executor services
+        OmrExecutors.restart();
+
         // Tool build
         final Package thisPackage = Main.class.getPackage();
-        toolBuild = thisPackage.getImplementationVersion();
+        toolBuild = thisPackage.getSpecificationVersion();
     }
 
     //---------//
