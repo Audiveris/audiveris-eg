@@ -15,7 +15,6 @@ import omr.glyph.Glyphs;
 import omr.glyph.Shape;
 import static omr.glyph.ShapeSet.*;
 import omr.glyph.facets.Glyph;
-import omr.glyph.text.Sentence;
 
 import omr.log.Logger;
 
@@ -60,6 +59,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import omr.text.TextLine;
 
 /**
  * Class {@code SystemTranslator} performs all translation tasks for
@@ -482,7 +482,7 @@ public class SystemTranslator
                 purging = false;
 
                 // Allocate proper chords in every slot
-                measure.getChords().clear();
+                measure.getChords().retainAll(measure.getWholeChords());
 
                 int id = 0;
 
@@ -508,9 +508,9 @@ public class SystemTranslator
                         if (!stems.isEmpty()) {
                             logger.fine(
                                     "{0} merging slots #{1} & #{2} around {3}",
-                                    new Object[]{measure.getContextString(),
-                                                 prevSlot.getId(), slot.getId(),
-                                                 Glyphs.toString("stems", stems)});
+                                    measure.getContextString(),
+                                    prevSlot.getId(), slot.getId(),
+                                    Glyphs.toString("stems", stems));
 
                             prevSlot.includeSlot(slot);
                             it.remove();
@@ -728,7 +728,8 @@ public class SystemTranslator
             if (stem != null) {
                 super.computeLocation(stem);
             } else {
-                system.addError(
+                system.
+                        addError(
                         glyph,
                         "Flag glyph " + glyph.getId() + " with no attached stem");
                 super.computeLocation(glyph);
@@ -999,7 +1000,7 @@ public class SystemTranslator
         @Override
         public void completeSystem ()
         {
-            for (Sentence sentence : system.getInfo().getSentences()) {
+            for (TextLine sentence : system.getInfo().getSentences()) {
                 Text.populate(sentence, sentence.getLocation());
             }
 
@@ -1018,7 +1019,7 @@ public class SystemTranslator
                     systemBox.x + (systemBox.width / 2),
                     systemBox.y + systemBox.height);
             currentStaff = system.getTextStaff(
-                    glyph.getTextRole(),
+                    glyph.getTextRole().role,
                     currentCenter);
             currentPart = currentStaff.getPart();
         }

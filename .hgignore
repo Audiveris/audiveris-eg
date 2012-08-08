@@ -1,23 +1,25 @@
-# First, use glob syntax -------------------------------------------------------
+# First, use regexp syntax -------------------------------------------------------
 syntax: regexp
 \.hgignore$
 \.chg\..*$
 \.conflict\~$
 \.log$
 \.exe$
+\.mf$
 \.mid$
 \.msi$
 \.msm$
 \.orig$
 \.orig\..*$
 \.rej$
+\.zip$
 benches$
 build$
 dist$
-externals
 jars$
 midi$
-nbproject$
+bin
+ocr-204$
 pdf$
 print$
 scores$
@@ -37,15 +39,14 @@ nbbuild.xml
 syntax: glob
 
 audiveris.bat
-#build/*
-#build/**/*
-^build.xml
+manifest.mf
 # Ignore .jpg and .pdf under the src directory since they are produced via umlet
 # Images handled by conf management should use other suffix (.png for example)
 src/**/*.jpg
 src/**/*.pdf
 dev/material/*.jpg
 train/core/*
-dev/externals
-dev/tools
-run.properties
+ocr/tessdata/*
+eval/backup-neural-network.xml
+settings/run.properties
+nbproject/configs

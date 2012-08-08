@@ -46,7 +46,7 @@ import javax.swing.event.ListSelectionListener;
  * Class {@code ErrorsEditor} handles the set of error messages
  * recorded during the translation from sheet to score, allowing the
  * user to interactively browse the errors and go to the related
- * locations in the sheet and score views.
+ * location in the sheet view.
  *
  * @author Hervé Bitteur
  */
@@ -88,8 +88,7 @@ public class ErrorsEditor
     public ErrorsEditor (Sheet sheet)
     {
         this.sheet = sheet;
-        //HB7 list = new JList<Record>(model);
-        list = new JList(model);
+        list = new JList<Record>(model);
         scrollPane = new JScrollPane(list);
         list.addListSelectionListener(listener);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -322,13 +321,9 @@ public class ErrorsEditor
             StringBuilder sb = new StringBuilder();
             sb.append(node.getContextString());
 
-            sb.append(" [");
-
             if (glyph != null) {
-                sb.append(glyph.idString());
+                sb.append(" [").append(glyph.idString()).append("]");
             }
-
-            sb.append("]");
 
             sb.append(" ").append(step);
 

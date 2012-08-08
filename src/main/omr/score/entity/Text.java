@@ -12,14 +12,17 @@
 package omr.score.entity;
 
 import omr.glyph.facets.Glyph;
-import omr.glyph.text.Sentence;
-import omr.glyph.text.TextRole;
 
 import omr.log.Logger;
 
 import omr.score.common.PixelPoint;
 import omr.score.common.PixelRectangle;
 import omr.score.visitor.ScoreVisitor;
+
+import omr.text.TextLine;
+import omr.text.TextRole;
+import omr.text.TextRoleInfo;
+import omr.text.TextWord;
 
 import omr.ui.symbol.TextFont;
 
@@ -29,13 +32,14 @@ import java.awt.Font;
  * Class {@code Text} handles any textual score entity.
  *
  * <p><b>Nota</b>: There is exactly one Text entity per sentence, except for
- * lyrics items for which we build one LyricsItem (subclass of Text) for each
- * textual glyph. The reason is that, except for lyrics, only the full sentence
+ * lyrics items for which we build one {@code LyricsItem} (subclass of Text)
+ * for each textual glyph.
+ * The reason is that, except for lyrics, only the full sentence
  * is meaningful: for example "Ludwig van Beethoven" is meaningful as a Creator
- * Text, but the various glyphs "Ludwig", "van", "Beethoven" are not.
+ * Text, but the various words "Ludwig", "van", "Beethoven" are not.
  * For lyrics, since we can have very long sentences, and since the positioning
  * of every syllable must be done with precision, we handle one LyricsItem Text
- * entity per isolated textual glyph.</p>
+ * entity per isolated word.</p>
  *
  * <p>Working at the sentence level also allows a better accuracy in the setting
  * of parameters (such as baseline or font) for the whole sentence.</p>
@@ -55,11 +59,9 @@ public abstract class Text
     private static final Logger logger = Logger.getLogger(Text.class);
 
     //~ Instance fields --------------------------------------------------------
-    /** The containing sentence */
-    private final Sentence sentence;
-
-    /** The font to render this text entity */
-    protected Font font;
+    //
+    /** The containing sentence. */
+    private final TextLine sentence;
 
     //~ Constructors -----------------------------------------------------------
     //------//
@@ -70,7 +72,7 @@ public abstract class Text
      *
      * @param sentence the larger sentence
      */
-    public Text (Sentence sentence)
+    public Text (TextLine sentence)
     {
         this(sentence, sentence.getLocation());
     }
@@ -85,7 +87,7 @@ public abstract class Text
      * @param sentence the larger sentence
      * @param location specific location
      */
-    public Text (Sentence sentence,
+    public Text (TextLine sentence,
                  PixelPoint location)
     {
         super(sentence.getSystemPart());
@@ -94,16 +96,6 @@ public abstract class Text
 
         setBox(sentence.getBounds());
 
-        // Proper font ?
-        if (sentence.getFontSize() != null) {
-            font = TextFont.baseTextFont.deriveFont(
-                    (float) sentence.getFontSize());
-        } else {
-            addError("Text with no sentence font size at " + location);
-            font = TextFont.baseTextFont;
-        }
-
-        ///determineFontSize();
         logger.fine("Created {0}", this);
     }
 
@@ -154,104 +146,107 @@ public abstract class Text
      * @param sentence the whole sentence
      * @param location its starting reference wrt containing system
      */
-    public static void populate (Sentence sentence,
+    public static void populate (TextLine sentence,
                                  PixelPoint location)
     {
         final SystemPart systemPart = sentence.getSystemPart();
-        final TextRole role = sentence.getTextRole();
+        final TextRoleInfo roleInfo = sentence.getRole();
+        final TextRole role = roleInfo.role;
 
         if ((role == null) || (role == TextRole.UnknownRole)) {
             systemPart.addError(
-                    sentence.getCompound(),
+                    sentence.getFirstWord().getGlyph(),
                     "Sentence with no role defined");
         }
 
-        logger.fine("Populating {0} {1} \"{2}\"", new Object[]{sentence, role,
-                                                               sentence.
-                    getTextContent()});
+        logger.fine("Populating {0} {1} \"{2}\"",
+                    sentence, role, sentence.getValue());
 
         if (role == null) {
             return;
         }
 
         switch (role) {
-            case Lyrics:
+        case Lyrics:
 
-                // Create as many lyrics items as needed
-                for (Glyph item : sentence.getItems()) {
-                    PixelRectangle itemBox = item.getBounds();
-                    String itemStr = item.getTextValue();
+            // Create as many lyrics items as needed
+            for (TextWord word : sentence.getWords()) {
+                Glyph glyph = word.getGlyph();
+                PixelRectangle itemBox = word.getBounds();
+                String itemStr = word.getValue();
 
-                    if (itemStr == null) {
-                        int nbChar = (int) Math.rint(
-                                (double) itemBox.width / sentence.getTextHeight());
-                        itemStr = role.getStringHolder(nbChar);
-                    }
-
-                    item.setTranslation(
-                            new LyricsItem(
-                            sentence,
-                            new PixelPoint(itemBox.x, location.y),
-                            item,
-                            itemBox.width,
-                            itemStr));
+                if (itemStr == null) {
+                    // A very rough char count ...
+//                    int nbChar = (int) Math.rint(
+//                            (double) itemBox.width / sentence.getTextHeight());
+                    int nbChar = 5;
+                    itemStr = role.getStringHolder(nbChar);
                 }
 
-                break;
-
-            case Title:
-                sentence.setGlyphsTranslation(new TitleText(sentence));
-
-                break;
-
-            case Direction:
-
-                Measure measure = systemPart.getMeasureAt(location);
-                sentence.setGlyphsTranslation(
-                        new DirectionStatement(
-                        measure,
-                        location,
-                        measure.getDirectionChord(location),
+                glyph.setTranslation(
+                        new LyricsItem(
                         sentence,
-                        new DirectionText(sentence)));
+                        new PixelPoint(itemBox.x, location.y), // TODO: review!
+                        glyph,
+                        itemBox.width,
+                        itemStr));
+            }
 
-                break;
+            break;
 
-            case Number:
-                sentence.setGlyphsTranslation(new NumberText(sentence));
+        case Title:
+            sentence.setGlyphsTranslation(new TitleText(sentence));
 
-                break;
+            break;
 
-            case Name:
-                sentence.setGlyphsTranslation(new NameText(sentence));
+        case Direction:
 
-                break;
+            Measure measure = systemPart.getMeasureAt(location);
+            sentence.setGlyphsTranslation(
+                    new DirectionStatement(
+                    measure,
+                    location,
+                    measure.getDirectionChord(location),
+                    sentence,
+                    new DirectionText(sentence)));
 
-            case Creator:
-                sentence.setGlyphsTranslation(new CreatorText(sentence));
+            break;
 
-                break;
+        case Number:
+            sentence.setGlyphsTranslation(new NumberText(sentence));
 
-            case Rights:
-                sentence.setGlyphsTranslation(new RightsText(sentence));
+            break;
 
-                break;
+        case Name:
+            sentence.setGlyphsTranslation(new NameText(sentence));
 
-            case Chord:
-                measure = systemPart.getMeasureAt(location);
-                sentence.setGlyphsTranslation(
-                        new ChordStatement(
-                        measure,
-                        location,
-                        measure.getEventChord(location),
-                        sentence,
-                        new ChordText(sentence)));
+            break;
 
-                break;
+        case Creator:
+            sentence.setGlyphsTranslation(new CreatorText(sentence));
 
-            case UnknownRole:
-            default:
-                sentence.setGlyphsTranslation(new DefaultText(sentence));
+            break;
+
+        case Rights:
+            sentence.setGlyphsTranslation(new RightsText(sentence));
+
+            break;
+
+        case Chord:
+            measure = systemPart.getMeasureAt(location);
+            sentence.setGlyphsTranslation(
+                    new ChordStatement(
+                    measure,
+                    location,
+                    measure.getEventChord(location),
+                    sentence,
+                    new ChordText(sentence)));
+
+            break;
+
+        case UnknownRole:
+        default:
+            sentence.setGlyphsTranslation(new DefaultText(sentence));
         }
     }
 
@@ -274,33 +269,21 @@ public abstract class Text
      */
     public String getContent ()
     {
-        return sentence.getTextContent();
+        return sentence.getValue();
     }
 
-    //---------//
-    // getFont //
-    //---------//
-    /**
-     * Report the font to render this text
-     *
-     * @return the font to render this text
-     */
-    public Font getFont ()
-    {
-        return font;
-    }
-
-    //-------------//
-    // getFontSize //
-    //-------------//
+    //---------------------//
+    // getExportedFontSize //
+    //---------------------//
     /**
      * Report the font size to be exported for this text
      *
      * @return the exported font size
      */
-    public float getFontSize ()
+    public int getExportedFontSize ()
     {
-        return font.getSize2D();
+        // Round it to nearest integer
+        return (int) Math.rint(sentence.getMeanFontSize() * TextFont.TO_POINT);
     }
 
     //-------------//
@@ -311,7 +294,7 @@ public abstract class Text
      *
      * @return the related sentence
      */
-    public Sentence getSentence ()
+    public TextLine getSentence ()
     {
         return sentence;
     }
@@ -339,12 +322,13 @@ public abstract class Text
     public String toString ()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("{Text ").append(sentence.getTextRole()).append(
-                internalsString());
-
-        if (font != null) {
-            sb.append(" font:").append(font.getSize());
+        sb.append("{Text");
+        
+        if (sentence.getRole() != null) {
+            sb.append(" ").append(sentence.getRole());
         }
+        
+        sb.append(internalsString());
 
         if (getContent() != null) {
             sb.append(" \"").append(getContent()).append("\"");
@@ -352,8 +336,9 @@ public abstract class Text
 
         sb.append(" loc:").append(getReferencePoint());
 
-        sb.append(" S").append(getSystem().getId()).append("P").append(getPart().
-                getId());
+        sb.append(" S").append(getSystem().getId());
+        sb.append("P").append(getPart().getId());
+
         sb.append("}");
 
         return sb.toString();
@@ -397,44 +382,15 @@ public abstract class Text
         {
             //~ Enumeration constant initializers ------------------------------
 
-            arranger,
             composer,
             lyricist,
-            poet,
-            transcriber,
-            translator;
+            arranger;
         }
-
-        //~ Instance fields ----------------------------------------------------
-        /** Creator type, if any */
-        private CreatorType creatorType;
 
         //~ Constructors -------------------------------------------------------
-        public CreatorText (Sentence sentence)
+        public CreatorText (TextLine sentence)
         {
             super(sentence);
-            setCreatorType(sentence.getTextType());
-        }
-
-        //~ Methods ------------------------------------------------------------
-        public CreatorType getCreatorType ()
-        {
-            return creatorType;
-        }
-
-        public void setCreatorType (CreatorType creatorType)
-        {
-            this.creatorType = creatorType;
-        }
-
-        @Override
-        protected String internalsString ()
-        {
-            if (creatorType != null) {
-                return " " + creatorType;
-            } else {
-                return "";
-            }
         }
     }
 
@@ -449,7 +405,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public DefaultText (Sentence sentence)
+        public DefaultText (TextLine sentence)
         {
             super(sentence);
         }
@@ -464,7 +420,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public DirectionText (Sentence sentence)
+        public DirectionText (TextLine sentence)
         {
             super(sentence);
         }
@@ -479,7 +435,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public NameText (Sentence sentence)
+        public NameText (TextLine sentence)
         {
             super(sentence);
 
@@ -498,7 +454,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public NumberText (Sentence sentence)
+        public NumberText (TextLine sentence)
         {
             super(sentence);
         }
@@ -513,7 +469,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public RightsText (Sentence sentence)
+        public RightsText (TextLine sentence)
         {
             super(sentence);
         }
@@ -528,7 +484,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public ChordText (Sentence sentence)
+        public ChordText (TextLine sentence)
         {
             super(sentence);
         }
@@ -543,7 +499,7 @@ public abstract class Text
     {
         //~ Constructors -------------------------------------------------------
 
-        public TitleText (Sentence sentence)
+        public TitleText (TextLine sentence)
         {
             super(sentence);
         }

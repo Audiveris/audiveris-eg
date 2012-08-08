@@ -21,7 +21,6 @@ import omr.glyph.GlyphsBuilder;
 import omr.glyph.facets.Glyph;
 import omr.glyph.pattern.PatternsChecker;
 import omr.glyph.pattern.SlurInspector;
-import omr.glyph.text.Sentence;
 
 import omr.grid.BarAlignment;
 import omr.grid.BarInfo;
@@ -42,6 +41,9 @@ import omr.score.entity.Staff;
 import omr.score.entity.SystemPart;
 
 import omr.step.StepException;
+
+import omr.text.TextBuilder;
+import omr.text.TextLine;
 
 import omr.util.HorizontalSide;
 import static omr.util.HorizontalSide.*;
@@ -87,6 +89,9 @@ public class SystemInfo
 
     /** Dedicated measure builder */
     private final MeasuresBuilder measuresBuilder;
+
+    /** Dedicated text builder */
+    private final TextBuilder textBuilder;
 
     /** Dedicated glyph builder */
     private final GlyphsBuilder glyphsBuilder;
@@ -169,8 +174,8 @@ public class SystemInfo
             unmodifiableSortedSet(
             glyphs);
 
-    /** Set of sentences made of text glyphs */
-    private Set<Sentence> sentences = new LinkedHashSet<>();
+    /** Set of sentence made of text glyphs */
+    private Set<TextLine> sentences = new LinkedHashSet<>();
 
     /** Used to assign a unique ID to system sentences */
     private int sentenceCount = 0;
@@ -220,6 +225,7 @@ public class SystemInfo
         updateCoordinates();
 
         measuresBuilder = new MeasuresBuilder(this);
+        textBuilder = new TextBuilder(this);
         glyphsBuilder = new GlyphsBuilder(this);
         compoundBuilder = new CompoundBuilder(this);
         verticalsBuilder = new VerticalsBuilder(this);
@@ -246,7 +252,7 @@ public class SystemInfo
      *
      * @param glyph the brand new glyph
      * @return the original glyph as inserted in the glyph nest. Use this entity
-     * instead of the provided one.
+     *         instead of the provided one.
      * @see #registerGlyph
      */
     public Glyph addGlyph (Glyph glyph)
@@ -314,7 +320,7 @@ public class SystemInfo
         int partId = 0;
 
         for (PartInfo partInfo : getParts()) {
-            SystemPart part = new SystemPart(scoreSystem);
+            SystemPart part = new SystemPart(scoreSystem, partInfo);
             part.setId(--partId); // Temporary id
 
             // Allocate the staves in this part
@@ -961,7 +967,7 @@ public class SystemInfo
      *
      * @return the (perhaps empty) collection of sentences found
      */
-    public Set<Sentence> getSentences ()
+    public Set<TextLine> getSentences ()
     {
         return sentences;
     }
@@ -1237,8 +1243,10 @@ public class SystemInfo
             }
         }
 
-        logger.fine("removeInactiveGlyphs: {0} {1}", new Object[]{
-                    toRemove.size(), Glyphs.toString(toRemove)});
+        if (logger.isFineEnabled()) {
+            logger.fine("removeInactiveGlyphs: {0} {1}",
+                        toRemove.size(), Glyphs.toString(toRemove));
+        }
 
         for (Glyph glyph : toRemove) {
             // Remove glyph from system & cut sections links to it
@@ -1335,12 +1343,12 @@ public class SystemInfo
      *
      * @param glyphs    the provided collection of glyphs candidates, or the
      *                  full
-     * system collection if null
+     *                  system collection if null
      * @param predicate the condition to be fulfilled to get selected
      * @return the sorted set of selected glyphs
      */
-    public SortedSet selectGlyphs (Collection<Glyph> glyphs,
-                                   Predicate<Glyph> predicate)
+    public SortedSet<Glyph> selectGlyphs (Collection<Glyph> glyphs,
+                                          Predicate<Glyph> predicate)
     {
         SortedSet<Glyph> selected = new TreeSet<>();
 
@@ -1570,7 +1578,16 @@ public class SystemInfo
         top = (int) Math.rint(topLeft.getY());
         width = (int) Math.rint(topRight.getX() - topLeft.getX());
         deltaY = (int) Math.rint(
-                lastStaff.getFirstLine().getEndPoint(LEFT).getY() - topLeft.getY());
+                lastStaff.getFirstLine().getEndPoint(LEFT).getY() - topLeft.
+                getY());
         bottom = (int) Math.rint(botLeft.getY());
+    }
+
+    //----------------//
+    // getTextBuilder //
+    //----------------//
+    public TextBuilder getTextBuilder ()
+    {
+        return textBuilder;
     }
 }

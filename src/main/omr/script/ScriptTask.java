@@ -33,8 +33,7 @@ import org.jdesktop.application.Task;
  * UI module should do.</p>
  *
  * <p>Running a task has the side-effect of writing this task in the current
- * score script, unless the task is defined as not recordable. This is the case
- * of the {@link PlayTask}.</p>
+ * score script, unless the task is defined as not recordable.</p>
  *
  * @author Hervé Bitteur
  */
@@ -61,8 +60,8 @@ public abstract class ScriptTask
     //-----//
     /**
      * Run this task synchronously (prolog + core + epilog)
-     * This is meant to be called by the script engine, to ensure that every
-     * task is completed before the next is run.
+     * This is meant to be called by the script engine, to ensure that 
+     * every task is completed before the next is run.
      * This method is final, subclasses should define core() and potentially
      * customize prolog() and epilog().
      *
@@ -118,9 +117,9 @@ public abstract class ScriptTask
      * @param sheet the sheet to run this task against
      * @return the launched SAF task
      */
-    public Task launch (final Sheet sheet)
+    public Task<Void, Void> launch (final Sheet sheet)
     {
-        Task task = new BasicTask() {
+        Task<Void, Void> task = new BasicTask() {
             @Override
             protected Void doInBackground ()
                 throws Exception

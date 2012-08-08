@@ -11,7 +11,7 @@
 // </editor-fold>
 package omr.score.entity;
 
-import omr.glyph.text.TextRole;
+import omr.text.TextRole;
 
 import omr.log.Logger;
 
@@ -327,7 +327,7 @@ public class ScoreSystem
         Staff staff = getStaffAbove(point);
 
         if (staff == null) {
-            return getFirstPart();
+            return getFirstRealPart();
         } else {
             return staff.getPart();
         }
