@@ -38,7 +38,6 @@ public class GridStep
             Steps.GRID,
             Level.SHEET_LEVEL,
             Mandatory.MANDATORY,
-            Redoable.NON_REDOABLE,
             "Dewarped",
             "Retrieve the grid of all systems");
     }
@@ -53,6 +52,7 @@ public class GridStep
                       Sheet                  sheet)
         throws StepException
     {
+        sheet.reset(Steps.GRID);
         sheet.getGridBuilder().buildInfo();
     }
 }

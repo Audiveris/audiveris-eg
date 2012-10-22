@@ -21,7 +21,6 @@ import omr.glyph.facets.Glyph;
 
 import omr.grid.LineInfo;
 import omr.grid.StaffInfo;
-import omr.grid.SystemManager;
 
 import omr.log.Logger;
 
@@ -80,6 +79,7 @@ public class SystemsBuilder
     private static final Logger logger = Logger.getLogger(SystemsBuilder.class);
 
     //~ Instance fields --------------------------------------------------------
+    //
     /** Sheet retrieved systems */
     private final List<SystemInfo> systems;
 
@@ -140,7 +140,7 @@ public class SystemsBuilder
         ///sheet.splitHorizontals();
         sheet.splitHorizontalSections();
         sheet.splitVerticalSections();
-        sheet.splitBarSticks(nest.getAllGlyphs());
+        sheet.splitGlyphs();
     }
 
     //------------------------//
@@ -170,10 +170,9 @@ public class SystemsBuilder
      */
     private void buildParts ()
     {
-        final SystemManager systemManager = sheet.getSystemManager();
-        final Integer[] partTops = systemManager.getPartTops();
+        final Integer[] partTops = sheet.getStaffManager().getPartTops();
 
-        for (SystemInfo system : systemManager.getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             system.getParts().clear(); // Start from scratch
             int partTop = -1;
             PartInfo part = null;
@@ -253,7 +252,13 @@ public class SystemsBuilder
                         new Point(sheet.getWidth(), line.yAtX(sheet.getWidth())));
 
                 // Check if the border is acceptable and replace it if needed
-                border = refineBorder(border, prevSystem, system);
+                BrokenLine newBorder = refineBorder(border, prevSystem, system);
+
+                if (newBorder != null) {
+                    border = newBorder;
+                } else {
+                    // Use basic border as a temporary virtual border only
+                }
 
                 prevSystem.setBoundary(
                         new SystemBoundary(prevSystem, prevBorder, border));
@@ -301,9 +306,9 @@ public class SystemsBuilder
             }
         }
 
-        logger.fine("S#{0}-{1} : {2}{3}", new Object[]{prevSystem.getId(),
-                                                       system.getId(), polygon.
-                    getBounds(), Glyphs.toString(" inter:", intersected)});
+        logger.fine("S#{0}-{1} : {2}{3}", prevSystem.getId(),
+                system.getId(), polygon.getBounds(),
+                Glyphs.toString(" inter:", intersected));
 
         // If the yellow zone is empty, keep the border
         // Otherwise, use the more complex approach
@@ -352,7 +357,7 @@ public class SystemsBuilder
 
         sheet.getBench().recordSystemCount(sysNb);
 
-        logger.info("{0}{1}", new Object[]{sheet.getLogPrefix(), sb.toString()});
+        logger.info("{0}{1}", sheet.getLogPrefix(), sb.toString());
     }
 
     //~ Inner Classes ----------------------------------------------------------
@@ -367,5 +372,6 @@ public class SystemsBuilder
         Scale.Fraction yellowZoneHalfHeight = new Scale.Fraction(
                 1,
                 "Half height of inter-system yellow zone");
+
     }
 }

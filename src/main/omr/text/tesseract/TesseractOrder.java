@@ -11,7 +11,10 @@
 // </editor-fold>
 package omr.text.tesseract;
 
+import java.awt.Rectangle;
 import omr.WellKnowns;
+
+import omr.sheet.SystemInfo;
 
 import omr.text.FontInfo;
 import omr.text.TextChar;
@@ -40,7 +43,6 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
-import omr.sheet.SystemInfo;
 
 /**
  * Class {@code TesseractOrder} carries a processing order submitted
@@ -241,6 +243,8 @@ public class TesseractOrder
      */
     private List<TextLine> getLines ()
     {
+        final int maxDashWidth = system.getScoreSystem().getScale().getInterline();
+
         ResultIterator it = api.GetIterator();
 
         List<TextLine> lines = new ArrayList<>(); // Lines built so far
@@ -265,7 +269,7 @@ public class TesseractOrder
                 if (it.IsAtBeginningOf(Level.WORD)) {
                     FontInfo fontInfo = getFont(it.WordFontAttributes());
                     if (fontInfo == null) {
-                        logger.warning("No font info on {0}", label);
+                        logger.fine("No font info on {0}", label);
                         return null;
                     }
                     word = new TextWord(
@@ -290,10 +294,16 @@ public class TesseractOrder
                 }
 
                 // Char/symbol to be processed
-                word.addChar(
-                        new TextChar(
-                        it.BoundingBox(Level.SYMBOL),
-                        it.GetUTF8Text(Level.SYMBOL)));
+
+                // Fix long "—" vs short "-"
+                String charValue = it.GetUTF8Text(Level.SYMBOL);
+                Rectangle charBox = it.BoundingBox(Level.SYMBOL);
+                if (charValue.equals("—") && charBox.width <= maxDashWidth) {
+                    charValue = "-";                    
+                    // Containing word value will be updated later
+                }
+
+                word.addChar(new TextChar(charBox, charValue));
             } while (it.Next(Level.SYMBOL));
 
             return lines;
@@ -337,6 +347,11 @@ public class TesseractOrder
         if (keepImage) {
             String name = String.format("%03d-", serial) + ((label != null) ? label : "");
             File file = new File(WellKnowns.TEMP_FOLDER, name + ".tif");
+
+            // Make sure the TEMP directory exists
+            if (!WellKnowns.TEMP_FOLDER.exists()) {
+                WellKnowns.TEMP_FOLDER.mkdir();
+            }
             try (final FileOutputStream fos = new FileOutputStream(
                             file.getAbsolutePath())) {
                 fos.write(bytes);

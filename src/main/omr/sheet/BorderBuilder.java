@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import omr.constant.Constant;
 
 /**
  * Class {@code BorderBuilder} implements a smart approach
@@ -76,13 +77,14 @@ public class BorderBuilder
     private static final Logger logger = Logger.getLogger(BorderBuilder.class);
 
     //~ Instance fields --------------------------------------------------------
-    /** Related sheet */
+    //
+    /** Related sheet. */
     private final Sheet sheet;
 
-    /** System above */
+    /** System above. */
     private final SystemInfo prevSystem;
 
-    /** System below */
+    /** System below. */
     private final SystemInfo system;
 
     // GlyphRect-based limits 
@@ -90,8 +92,11 @@ public class BorderBuilder
 
     private Limit botLimit;
 
-    /** Free blobs */
+    /** Free blobs. */
     private List<GlyphRect> blobs = new ArrayList<>();
+
+    /** Has the user been warned about a closed border?. */
+    private boolean userWarned;
 
     // Scale-dependent parameters
     private final double flatness;
@@ -103,6 +108,7 @@ public class BorderBuilder
     private final int yMargin;
 
     //~ Constructors -----------------------------------------------------------
+    //
     //---------------//
     // BorderBuilder //
     //---------------//
@@ -129,6 +135,7 @@ public class BorderBuilder
     }
 
     //~ Methods ----------------------------------------------------------------
+    //
     //-------------//
     // buildBorder //
     //-------------//
@@ -139,20 +146,37 @@ public class BorderBuilder
         LineInfo botLine = system.getFirstStaff().getFirstLine();
         PixelRectangle box = topLine.getBounds();
         box.add(botLine.getBounds());
+        final PixelRectangle interBox = box;
 
-        Set<Glyph> glyphs = sheet.getNest().lookupIntersectedGlyphs(box);
+        Set<Glyph> glyphs = sheet.getNest().lookupIntersectedGlyphs(interBox);
 
         // Remove small glyphs and the staff lines themselves
+        // Also remove glyphs that embrace the whole intersystem
         Glyphs.purge(
                 glyphs,
                 new Predicate<Glyph>()
                 {
-
                     @Override
                     public boolean check (Glyph glyph)
                     {
-                        return (glyph.getShape() == Shape.STAFF_LINE)
-                                || (glyph.getWeight() < minGlyphWeight);
+                        // Purge staff lines
+                        if (glyph.getShape() == Shape.STAFF_LINE) {
+                            return true;
+                        }
+                        
+                        // Purge abnormally tall glyphs
+                        PixelRectangle glyphBox = glyph.getBounds();
+                        if (glyphBox.y <= interBox.y && 
+                            glyphBox.y + glyphBox.height >= interBox.y + interBox.height) {
+                            return true;
+                        }
+                        
+                        // Purge too light glyphs
+                        if (glyph.getWeight() < minGlyphWeight) {
+                            return true;
+                        }
+                        
+                        return false;
                     }
                 });
 
@@ -172,11 +196,11 @@ public class BorderBuilder
         // Build a raw border out of the two limits
         BrokenLine rawBorder = getRawBorder();
 
-        if (false) {
-            return rawBorder;
+        if (constants.useSmoothBorders.isSet()) {
+            // Return the smooth border
+            return getSmoothBorder(rawBorder);
         } else {
-            // Return the refined border
-            return getRefinedBorder(rawBorder);
+            return rawBorder;
         }
     }
 
@@ -187,8 +211,8 @@ public class BorderBuilder
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Border S#").append(prevSystem.getId()).append("/S#").append(system.
-                getId());
+        sb.append("Border between systems S#").append(prevSystem.getId())
+                .append(" & S#").append(system.getId());
 
         return sb.toString();
     }
@@ -233,7 +257,7 @@ public class BorderBuilder
                                 index + 1,
                                 blobs.size())) {
                             if (b.intersects(rect)) {
-                                logger.fine("{0} + {1}", new Object[]{b, blob});
+                                logger.fine("{0} + {1}", b, blob);
 
                                 b.add(blob);
                                 it.remove();
@@ -381,12 +405,13 @@ public class BorderBuilder
             int top = topLimit.getY(x, -1);
             int bot = botLimit.getY(x, +1);
 
-            if (top > bot) {
-                logger.warning("{0} closed at x: {1}", new Object[]{idString(),
-                                                                    x});
-            }
-
             int y = (top + bot) / 2;
+
+            if (top > bot && !userWarned) {
+                logger.warning("{0}{1} got closed at x:{2} y:{3}",
+                        sheet.getLogPrefix(), idString(), x, y);
+                userWarned = true;
+            }
 
             if (x == xMax) {
                 // Very last point
@@ -407,16 +432,16 @@ public class BorderBuilder
         return line;
     }
 
-    //------------------//
-    // getRefinedBorder //
-    //------------------//
+    //-----------------//
+    // getSmoothBorder //
+    //-----------------//
     /**
-     * Refine the raw border as much as possible
+     * Smoothen the raw border as much as possible
      *
      * @param line the initial (raw) border
-     * @return the refined border
+     * @return the smooth border
      */
-    private BrokenLine getRefinedBorder (BrokenLine line)
+    private BrokenLine getSmoothBorder (BrokenLine line)
     {
         // 1/Start with left point
         // 2/Try to skip the following points until a limit is intersected
@@ -433,8 +458,8 @@ public class BorderBuilder
                 Point pt = line.getPoint(index);
 
                 if (topLimit.intersects(lastPoint, pt)
-                        || botLimit.intersects(lastPoint, pt)) {
-                    // Backup 
+                    || botLimit.intersects(lastPoint, pt)) {
+                    // Step back 
                     for (int i = lastIndex + 1, iBreak = index - 1; i < iBreak;
                             i++) {
                         Point p = line.getPoint(lastIndex + 1);
@@ -457,8 +482,8 @@ public class BorderBuilder
             line.removePoint(p);
         }
 
-        logger.fine("{0}Smart S{1}-S{2} system border: {3}", new Object[]{sheet.
-                    getLogPrefix(), prevSystem.getId(), system.getId(), line});
+        logger.fine("{0}Smart S{1}-S{2} system border: {3}",
+                sheet.getLogPrefix(), prevSystem.getId(), system.getId(), line);
 
         return line;
     }
@@ -486,6 +511,11 @@ public class BorderBuilder
         Scale.AreaFraction minGlyphWeight = new Scale.AreaFraction(
                 0.1,
                 "Minimum weight for free glyph");
+
+        Constant.Boolean useSmoothBorders = new Constant.Boolean(
+                true,
+                "Should we use smooth inter-system borders?");
+
     }
 
     //-----------//
@@ -633,8 +663,8 @@ public class BorderBuilder
         {
             for (Rectangle rect : boxes) {
                 if (rect.intersectsLine(p1.x, p1.y, p2.x, p2.y)) {
-                    logger.fine("{0} intersects from {1} to {2}", new Object[]{
-                                rect, p1, p2});
+                    logger.fine("{0} intersects from {1} to {2}",
+                            rect, p1, p2);
                     return true;
                 }
             }

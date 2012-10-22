@@ -21,7 +21,6 @@ import omr.score.entity.TimeRational;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Class {@code BasicRecognition} is the basic implementation of a
@@ -273,12 +272,12 @@ class BasicRecognition
         Shape oldShape = getShape();
 
         if ((oldShape != null) && (oldShape != shape)
-                && (oldShape != Shape.GLYPH_PART)) {
+            && (oldShape != Shape.GLYPH_PART)) {
             forbidShape(oldShape);
 
             if (glyph.isVip()) {
                 logger.info("Shape {0} forbidden for {1}",
-                            new Object[]{oldShape, glyph.idString()});
+                        oldShape, glyph.idString());
             }
         }
 

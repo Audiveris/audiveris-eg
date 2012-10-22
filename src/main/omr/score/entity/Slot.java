@@ -11,43 +11,71 @@
 // </editor-fold>
 package omr.score.entity;
 
+import omr.constant.ConstantSet;
+
 import omr.glyph.facets.Glyph;
 
 import omr.log.Logger;
 
 import omr.math.InjectionSolver;
+import omr.math.Population;
 import omr.math.Rational;
 
 import omr.score.common.PixelPoint;
 
+import omr.sheet.Scale;
+
 import omr.util.HorizontalSide;
 import omr.util.Navigable;
+import omr.util.Param;
 import omr.util.TreeNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Class {@code Slot} represents a roughly defined time slot within a
- * measure, to gather all chord entities (rests, whole notes or
- * noteheads) that occur at the same time because their abscissae are
- * roughly the same.
+ * measure, to gather all chords that start at the same time.
  *
- * <p>There are two policies to define slots: one based on heads implemented in
- * {@link HeadBasedSlot} and one based on stems implemented in
- * {@link StemBasedSlot}.
+ * <div style="float: right;">
+ * <img src="doc-files/Slot.png" alt="diagram">
+ * </div>
  *
- * <p>The slot embraces all the staves of this part measure. Perhaps we should
+ * <p>On the diagram shown, slots are indicated by vertical blue lines.</p>
+ *
+ * <p>The key point is to determine when two chords should belong or
+ * not to the same time slot:
+ * <ul>
+ * <li>Chords that share a common stem belong to the same slot.</li>
+ * <li>Chords that originate from the same physical glyph belong to the same
+ * slot. (for example a note head with one stem on left and one stem on right
+ * leads to two overlapping logical chords)</li>
+ * <li>Chords within the same beam group, but not on the same stem, cannot
+ * belong to the same slot.</li>
+ * <li>Similar abscissa is only an indication, it is not always reliable.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>The slot embraces all the staves of its part measure. Perhaps we should
  * consider merging slots between parts as well?
  *
- * <p>On the following picture, slots are indicated by vertical blue lines <br/>
- * <img src="doc-files/Slot.png" alt="diagram">
  *
  * @author Hervé Bitteur
  */
-public abstract class Slot
+public class Slot
         implements Comparable<Slot>
 {
     //~ Static fields/initializers ---------------------------------------------
+
+    /** Specific application parameters */
+    private static final Constants constants = new Constants();
 
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(Slot.class);
@@ -81,23 +109,29 @@ public abstract class Slot
         }
     };
 
+    /** Default slot abscissa margin. (in interline fraction) */
+    public static final Param<Double> defaultMargin = new DefaultMargin();
+
     //~ Instance fields --------------------------------------------------------
+    /** The containing measure. */
+    @Navigable(false)
+    private Measure measure;
     //
+
     /** Id unique within the containing measure. */
     private int id;
 
     /** Reference point of the slot. */
-    protected PixelPoint refPoint;
+    private PixelPoint refPoint;
 
-    /** The containing measure. */
-    @Navigable(false)
-    protected Measure measure;
+    /** Abscissae of all glyphs. */
+    private Population xPop = new Population();
+
+    /** Ordinates of all glyphs. */
+    private Population yPop = new Population();
 
     /** Collection of glyphs in the slot. */
-    protected List<Glyph> glyphs = new ArrayList<>();
-
-    /** Cached margin for abscissa alignment. */
-    protected final int xMargin;
+    private List<Glyph> glyphs = new ArrayList<>();
 
     /** Chords in this slot, sorted by staff, then by ordinate. */
     private List<Chord> chords = new ArrayList<>();
@@ -118,10 +152,6 @@ public abstract class Slot
     public Slot (Measure measure)
     {
         this.measure = measure;
-
-        double slotMargin = measure.getScore().getSlotMargin();
-        xMargin = (int) Math.rint(
-                measure.getScale().getInterline() * slotMargin);
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -159,16 +189,15 @@ public abstract class Slot
      *
      * @param glyph   a chord-relevant glyph (rest, note or notehead)
      * @param measure the containing measure
-     * @param policy  the policy to use for slot positioning
      */
     public static void populate (Glyph glyph,
-                                 Measure measure,
-                                 SlotPolicy policy)
+                                 Measure measure)
     {
         final boolean logging = glyph.isVip() || logger.isFineEnabled();
 
         if (logging) {
-            logger.info("Populating slot with {0}", glyph);
+            logger.info("{0} Populating slot with {1}", 
+                    measure.getContextString(), glyph);
         }
 
         // Special case for measure rests: they don't belong to any time slot,
@@ -176,11 +205,8 @@ public abstract class Slot
         if (glyph.getShape().isMeasureRest()) {
             measure.addWholeChord(glyph);
         } else {
-            // Use the stem abscissa or the note abscissa, according to policy
-            PixelPoint pt = (policy == SlotPolicy.STEM_BASED
-                             && glyph.getStemNumber() == 1)
-                            ? glyph.getFirstStem().getAreaCenter()
-                            : glyph.getAreaCenter();
+            // Use the note abscissa
+            PixelPoint pt = glyph.getAreaCenter();
 
             // First, look for a compatible slot
             for (Slot slot : measure.getSlots()) {
@@ -196,9 +222,7 @@ public abstract class Slot
             }
 
             // No compatible slot found, so let's create a brand new one
-            Slot slot = (policy == SlotPolicy.STEM_BASED)
-                        ? new StemBasedSlot(measure, pt)
-                        : new HeadBasedSlot(measure);
+            Slot slot = new Slot(measure);
 
             slot.addGlyph(glyph);
 
@@ -221,6 +245,12 @@ public abstract class Slot
     protected void addGlyph (Glyph glyph)
     {
         glyphs.add(glyph);
+
+        PixelPoint point = glyph.getLocation();
+        xPop.includeValue(point.x);
+        yPop.includeValue(point.y);
+
+        refPoint = null;
     }
 
     //------------------------//
@@ -235,6 +265,7 @@ public abstract class Slot
     {
         // Allocate 1 chord per stem, per rest, per (whole) note
         for (Glyph glyph : glyphs) {
+            glyph.clearTranslations();
             if (glyph.getStemNumber() > 0) {
                 // Beware of noteheads with 2 stems, we need to duplicate them
                 // in order to actually have two logical chords.
@@ -273,7 +304,7 @@ public abstract class Slot
         Collections.sort(chords, chordComparator);
 
         logger.fine("buildVoices for Slot#{0} Actives={1} Chords={2}",
-                    getId(), activeChords, chords);
+                getId(), activeChords, chords);
 
         // Use the active chords before this slot to compute start time
         computeStartTime(activeChords);
@@ -319,7 +350,7 @@ public abstract class Slot
             if (index < endingChords.size()) {
                 Voice voice = endingChords.get(index).getVoice();
                 logger.fine("Slot#{0} Reusing voice#{1}",
-                            getId(), voice.getId());
+                        getId(), voice.getId());
 
                 Chord ch = chords.get(i);
 
@@ -388,7 +419,18 @@ public abstract class Slot
      *
      * @return the slot abscissa (page-based, not measure-based)
      */
-    public abstract int getX ();
+    public int getX ()
+    {
+        if (refPoint == null) {
+            if (xPop.getCardinality() > 0) {
+                refPoint = new PixelPoint(
+                        (int) Math.rint(xPop.getMeanValue()),
+                        (int) Math.rint(yPop.getMeanValue()));
+            }
+        }
+
+        return refPoint.x;
+    }
 
     //---------------//
     // getChordAbove //
@@ -555,7 +597,10 @@ public abstract class Slot
      */
     public void includeSlot (Slot that)
     {
-        glyphs.addAll(that.glyphs);
+        // This will recompute the slot refPoint
+        for (Glyph glyph : that.glyphs) {
+            addGlyph(glyph);
+        }
     }
 
     //---------------//
@@ -570,7 +615,10 @@ public abstract class Slot
      */
     public boolean isAlignedWith (PixelPoint sysPt)
     {
-        return Math.abs(sysPt.x - getX()) <= xMargin;
+        Scale scale = measure.getScale();
+        int dx = Math.abs(sysPt.x - getX());
+
+        return scale.pixelsToFrac(dx) <= defaultMargin.getTarget();
     }
 
     //-------//
@@ -713,7 +761,7 @@ public abstract class Slot
                 sb.append(" Ch#").append(String.format("%02d", chord.getId()));
                 sb.append(" St").append(chord.getStaff().getId());
                 sb.append(" Dur=").append(String.format("%5s",
-                                                        chord.getDuration()));
+                        chord.getDuration()));
             } else {
                 sb.append("----------------------");
             }
@@ -749,7 +797,7 @@ public abstract class Slot
 
                 if (chord.getVoice() == null) {
                     logger.fine("{0} Slot#{1} creating voice for Ch#{2}",
-                                chord.getContextString(), id, chord.getId());
+                            chord.getContextString(), id, chord.getId());
 
                     // Add a new voice
                     new Voice(chord);
@@ -862,8 +910,8 @@ public abstract class Slot
             Chord oldChord = olds.get(ip);
 
             if ((newChord.getVoice() != null)
-                    && (oldChord.getVoice() != null)
-                    && (newChord.getVoice() != oldChord.getVoice())) {
+                && (oldChord.getVoice() != null)
+                && (newChord.getVoice() != oldChord.getVoice())) {
                 return INCOMPATIBLE_VOICES;
             } else if (newChord.getStaff() != oldChord.getStaff()) {
                 return STAFF_DIFF;
@@ -877,6 +925,48 @@ public abstract class Slot
 
                 return dy + (2 * dStem);
             }
+        }
+    }
+
+    //~ Inner Classes ----------------------------------------------------------
+    //
+    //-----------//
+    // Constants //
+    //-----------//
+    private static final class Constants
+            extends ConstantSet
+    {
+
+        Scale.Fraction xMargin = new Scale.Fraction(
+                0.4,
+                "Default abscissa margin between a slot and a glyph candidate");
+
+    }
+
+    //--------------//
+    // DefaultMargin //
+    //--------------//
+    private static class DefaultMargin
+            extends Param<Double>
+    {
+
+        @Override
+        public Double getSpecific ()
+        {
+            return constants.xMargin.getValue();
+        }
+
+        @Override
+        public boolean setSpecific (Double specific)
+        {
+            if (!getSpecific().equals(specific)) {
+                constants.xMargin.setValue(specific);
+                logger.info("Default slot margin is now ''{0}''", specific);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

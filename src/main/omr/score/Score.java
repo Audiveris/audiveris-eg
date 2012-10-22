@@ -22,24 +22,26 @@ import omr.log.Logger;
 
 import omr.math.Rational;
 
+import omr.run.FilterDescriptor;
+
 import omr.score.entity.MeasureId.MeasureRange;
 import omr.score.entity.Page;
 import omr.score.entity.ScoreNode;
 import omr.score.entity.ScorePart;
-import omr.score.entity.SlotPolicy;
 import omr.score.ui.ScoreTree;
 import omr.score.visitor.ScoreVisitor;
 
+import omr.script.ParametersTask.PartData;
 import omr.script.Script;
 import omr.script.ScriptActions;
 
-import omr.sheet.Scale;
 import omr.sheet.Sheet;
 import omr.sheet.picture.PictureLoader;
 import omr.sheet.ui.SheetsController;
 
 import omr.step.StepException;
 
+import omr.util.Param;
 import omr.util.FileUtil;
 import omr.util.TreeNode;
 
@@ -85,7 +87,7 @@ public class Score
     /** The recording of key processing data */
     private ScoreBench bench;
 
-    /** Dominant text language */
+    /** Dominant text language in the score */
     private String language;
 
     /** Greatest duration divisor */
@@ -121,11 +123,16 @@ public class Score
     /** The script of user actions on this score */
     private Script script;
 
-    /** The (score) slot policy */
-    private SlotPolicy slotPolicy;
+    /** Handling of binarization filter parameter. */
+    private final Param<FilterDescriptor> filterParam =
+            new Param<>(FilterDescriptor.defaultFilter);
 
-    /** The (score) slot horizontal margin, expressed in interline fraction */
-    private Double slotMargin;
+    /** Handling of language parameter. */
+    private final Param<String> textParam =
+            new Param<>(Language.defaultSpecification);
+
+    /** Handling of parts name and program. */
+    private final Param<List<PartData>> partsParam = new PartsParam();
 
     //~ Constructors -----------------------------------------------------------
     //-------//
@@ -168,7 +175,7 @@ public class Score
      */
     public void close ()
     {
-        logger.info("Score. Closing {0}", this);
+        logger.info("Closing {0}", this);
 
         // Check whether the score script has been saved (or user has declined)
         if ((Main.getGui() != null) && !ScriptActions.checkStored(getScript())) {
@@ -248,6 +255,9 @@ public class Score
 
             // Insert in sheet history
             ScoresManager.getInstance().getHistory().add(getImagePath());
+            if (Main.getGui() != null) {
+                Main.getGui().setHistoryEnabled(true);
+            }
         }
     }
 
@@ -270,30 +280,28 @@ public class Score
                 "----------------------------------------------------------------");
     }
 
-    //----------------------//
-    // getDefaultSlotMargin //
-    //----------------------//
-    /**
-     * Report the default horizontal Slot margin.
-     *
-     * @return the slotMargin (in interline fraction)
-     */
-    public static double getDefaultSlotMargin ()
+    //----------------//
+    // getFilterParam //
+    //----------------//
+    public Param<FilterDescriptor> getFilterParam ()
     {
-        return constants.defaultSlotMargin.getValue();
+        return filterParam;
     }
 
-    //----------------------//
-    // getDefaultSlotPolicy //
-    //----------------------//
-    /**
-     * Report the default policy to be used for retrieval of time slots.
-     *
-     * @return the default time slot policy
-     */
-    public static SlotPolicy getDefaultSlotPolicy ()
+    //--------------//
+    // getTextParam //
+    //--------------//
+    public Param<String> getTextParam ()
     {
-        return constants.defaultSlotPolicy.getValue();
+        return textParam;
+    }
+
+    //---------------//
+    // getPartsParam //
+    //---------------//
+    public Param<List<PartData>> getPartsParam ()
+    {
+        return partsParam;
     }
 
     //-----------------//
@@ -387,24 +395,6 @@ public class Score
     public String getImagePath ()
     {
         return imageFile.getPath();
-    }
-
-    //-------------//
-    // getLanguage //
-    //-------------//
-    /**
-     * Report the dominant language in the score text.
-     * If the value is not yet set, it is set to the default value and returned.
-     *
-     * @return the dominant language
-     */
-    public String getLanguage ()
-    {
-        if (!hasLanguage()) {
-            language = Language.getDefaultLanguage();
-        }
-
-        return language;
     }
 
     //--------------------//
@@ -512,7 +502,7 @@ public class Score
     {
         return multiPage;
     }
-    
+
     //--------//
     // isIdle //
     //--------//
@@ -533,32 +523,6 @@ public class Score
             }
         }
         return true;
-    }
-
-    //----------------------//
-    // setDefaultSlotMargin //
-    //----------------------//
-    /**
-     * Assign the default slot margin.
-     *
-     * @param fraction the horizontal margin, expressed in interline fraction
-     */
-    public static void setDefaultSlotMargin (double fraction)
-    {
-        constants.defaultSlotMargin.setValue(fraction);
-    }
-
-    //----------------------//
-    // setDefaultSlotPolicy //
-    //----------------------//
-    /**
-     * Assign the default slot policy.
-     *
-     * @param slotPolicy the slot policy
-     */
-    public static void setDefaultSlotPolicy (SlotPolicy slotPolicy)
-    {
-        constants.defaultSlotPolicy.setValue(slotPolicy);
     }
 
     //-----------------//
@@ -712,7 +676,7 @@ public class Score
         if (ScoresManager.isMultiScore()) {
             return "[" + radix + "] ";
         } else {
-                return "";
+            return "";
         }
     }
 
@@ -739,37 +703,6 @@ public class Score
     public File getScriptFile ()
     {
         return scriptFile;
-    }
-
-    //---------------//
-    // getSlotMargin //
-    //---------------//
-    /**
-     * Report the current horizontal Slot margin.
-     * If the value is not yet set, it is set to the default value and returned.
-     *
-     * @return the slotMargin (in interline fraction)
-     */
-    public double getSlotMargin ()
-    {
-        if (!hasSlotMargin()) {
-            slotMargin = getDefaultSlotMargin();
-        }
-
-        return slotMargin;
-    }
-
-    //---------------//
-    // getSlotPolicy //
-    //---------------//
-    /**
-     * Report the policy used for retrieval of time slots in this score.
-     *
-     * @return the score time slot policy
-     */
-    public SlotPolicy getSlotPolicy ()
-    {
-        return slotPolicy;
     }
 
     //----------//
@@ -821,27 +754,6 @@ public class Score
         return language != null;
     }
 
-    //---------------//
-    // hasSlotMargin //
-    //---------------//
-    /**
-     * Check whether slotMargin is defined for this score.
-     *
-     * @return true if slotMargin is defined
-     */
-    public boolean hasSlotMargin ()
-    {
-        return slotMargin != null;
-    }
-
-    //---------------//
-    // hasSlotPolicy //
-    //---------------//
-    public boolean hasSlotPolicy ()
-    {
-        return slotPolicy != null;
-    }
-
     //----------//
     // hasTempo //
     //----------//
@@ -877,6 +789,7 @@ public class Score
     public void remove (Page page)
     {
         getPages().remove(page);
+        setMultiPage(getPages().size() > 1);
     }
 
     //--------------------//
@@ -984,32 +897,6 @@ public class Score
         this.scriptFile = scriptFile;
     }
 
-    //---------------//
-    // setSlotMargin //
-    //---------------//
-    /**
-     * Assign the slot margin for this score.
-     *
-     * @param slotMargin the horizontal margin, expressed in interline fraction
-     */
-    public void setSlotMargin (double slotMargin)
-    {
-        this.slotMargin = slotMargin;
-    }
-
-    //---------------//
-    // setSlotPolicy //
-    //---------------//
-    /**
-     * Assign the slot policy for this score.
-     *
-     * @param slotPolicy the policy for determining slots
-     */
-    public void setSlotPolicy (SlotPolicy slotPolicy)
-    {
-        this.slotPolicy = slotPolicy;
-    }
-
     //----------//
     // setTempo //
     //----------//
@@ -1044,8 +931,8 @@ public class Score
      * duration divisor of the score.
      *
      * @param value the raw duration
-     * @return the simple duration expression, in the context of proper
-     * divisions
+     * @return the simple duration expression, in the param of proper
+     *         divisions
      */
     public int simpleDurationOf (Rational value)
     {
@@ -1100,12 +987,61 @@ public class Score
                 64,
                 "Default Volume in 0..127 range");
 
-        SlotPolicy.Constant defaultSlotPolicy = new SlotPolicy.Constant(
-                SlotPolicy.HEAD_BASED,
-                "Default policy for determining time slots (HEAD_BASED or SLOT_BASED)");
+    }
 
-        Scale.Fraction defaultSlotMargin = new Scale.Fraction(
-                0.5,
-                "Default horizontal margin between a slot and a glyph candidate");
+    //------------//
+    // PartsParam //
+    //------------//
+    private class PartsParam
+            extends Param<List<PartData>>
+    {
+
+        @Override
+        public List<PartData> getSpecific ()
+        {
+            List<ScorePart> list = getPartList();
+            if (list != null) {
+                List<PartData> data = new ArrayList<>();
+                for (ScorePart scorePart : list) {
+
+                    // Initial setting for part midi program
+                    int prog = (scorePart.getMidiProgram() != null)
+                            ? scorePart.getMidiProgram()
+                            : scorePart.getDefaultProgram();
+
+                    data.add(new PartData(scorePart.getName(), prog));
+                }
+                return data;
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        public boolean setSpecific (List<PartData> specific)
+        {
+            ///if (!getSpecific().equals(specific)) {
+            try {
+                for (int i = 0; i < specific.size(); i++) {
+                    PartData data = specific.get(i);
+                    ScorePart scorePart = getPartList().get(i);
+
+                    // Part name
+                    scorePart.setName(data.name);
+
+                    // Part midi program
+                    scorePart.setMidiProgram(data.program);
+                }
+
+                logger.info("Score parts have been updated");
+
+                return true;
+            } catch (Exception ex) {
+                logger.warning("Error updating score parts", ex);
+            }
+            ///}
+
+            return false;
+        }
     }
 }

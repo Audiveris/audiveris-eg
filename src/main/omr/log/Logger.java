@@ -19,6 +19,8 @@ import omr.constant.UnitManager;
 
 import omr.step.LogStepMonitorHandler;
 
+import omr.util.Param;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -55,6 +57,9 @@ public class Logger
 
     /** Specific application parameters */
     private static final Constants constants = new Constants();
+    
+    /** Parameter that governs call-stack printing. */
+    public static final Param<Boolean> defaultStack = new DefaultStack();
 
     /** Cache this log manager */
     private static LogManager manager;
@@ -398,11 +403,11 @@ public class Logger
 
                 logger = Logger.getLogger("stdout");
                 los = new LoggingOutputStream(logger, StdOutErrLevel.STDOUT);
-                System.setOut(new PrintStream(los, true, WellKnowns.encoding));
+                System.setOut(new PrintStream(los, true, WellKnowns.FILE_ENCODING));
 
                 logger = Logger.getLogger("stderr");
                 los = new LoggingOutputStream(logger, StdOutErrLevel.STDERR);
-                System.setErr(new PrintStream(los, true, WellKnowns.encoding));
+                System.setErr(new PrintStream(los, true, WellKnowns.FILE_ENCODING));
             } catch (IOException | SecurityException ex) {
                 ex.printStackTrace();
             }
@@ -428,11 +433,11 @@ public class Logger
             consoleHandler.setFilter(new LogEmptyMessageFilter());
 
             try {
-                consoleHandler.setEncoding(WellKnowns.encoding);
+                consoleHandler.setEncoding(WellKnowns.FILE_ENCODING);
             } catch (SecurityException | UnsupportedEncodingException ex) {
                 System.err.
                         println(
-                        "Cannot setEncoding to " + WellKnowns.encoding + " exception: " + ex);
+                        "Cannot setEncoding to " + WellKnowns.FILE_ENCODING + " exception: " + ex);
             }
         }
 
@@ -463,5 +468,34 @@ public class Logger
         final Constant.Boolean printThreadName = new Constant.Boolean(
                 false,
                 "Should we print out the name of the originating thread?");
+
+    }
+
+    //--------------//
+    // DefaultStack //
+    //--------------//
+    private static class DefaultStack
+            extends Param<Boolean>
+    {
+
+        @Override
+        public Boolean getSpecific ()
+        {
+            return constants.printStackOnWarning.getValue();
+        }
+
+        @Override
+        public boolean setSpecific (Boolean specific)
+        {
+            if (!getSpecific().equals(specific)) {
+                constants.printStackOnWarning.setValue(specific);
+                getAnonymousLogger().log(Level.INFO,
+                        "A call stack will {0} be printed on exception",
+                        specific ? "now" : "no longer");
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }

@@ -17,11 +17,14 @@ import omr.log.Logger;
 
 import omr.score.Score;
 
+import omr.script.ScriptManager;
+
 import omr.step.Step;
 import omr.step.Stepping;
 import omr.step.Steps;
 
 import omr.util.BasicTask;
+import omr.util.Param;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -40,7 +43,7 @@ import javax.swing.TransferHandler.TransferSupport;
  * @author Hervé Bitteur
  */
 public class FileDropHandler
-    extends TransferHandler
+        extends TransferHandler
 {
     //~ Static fields/initializers ---------------------------------------------
 
@@ -49,10 +52,12 @@ public class FileDropHandler
 
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(
-        FileDropHandler.class);
+            FileDropHandler.class);
+
+    /** Default parameter. */
+    public static final Param<Step> defaultStep = new Default();
 
     //~ Methods ----------------------------------------------------------------
-
     //-----------//
     // canImport //
     //-----------//
@@ -72,8 +77,7 @@ public class FileDropHandler
             return false;
         }
 
-        /* Check to see if the source actions contains the COPY action
-         */
+        /* Check to see if the source actions contains the COPY action */
         boolean copySupported = (COPY & support.getSourceDropActions()) == COPY;
 
         /* If COPY is supported, choose COPY and accept the transfer */
@@ -85,18 +89,6 @@ public class FileDropHandler
 
         /* COPY isn't supported, so reject the transfer */
         return false;
-    }
-
-    //----------------//
-    // getDefaultStep //
-    //----------------//
-    /**
-     * Report the current default step on DnD
-     * @return the current default step
-     */
-    public static Step getDefaultStep ()
-    {
-        return constants.defaultStep.getValue();
     }
 
     //------------//
@@ -122,7 +114,11 @@ public class FileDropHandler
 
             /* Loop through the files */
             for (File file : fileList) {
-                new DropTask(file, getDefaultStep()).execute();
+                if (file.getName().endsWith(ScriptManager.SCRIPT_EXTENSION)) {
+                    new DropScriptTask(file).execute();
+                } else {
+                    new DropImageTask(file, defaultStep.getTarget()).execute();
+                }
             }
         } catch (UnsupportedFlavorException ex) {
             logger.warning("Unsupported flavor in drag & drop", ex);
@@ -137,68 +133,112 @@ public class FileDropHandler
         return true;
     }
 
-    //----------------//
-    // setDefaultStep //
-    //----------------//
-    /**
-     * Assign the new default step on DnD
-     * @param step the new default step
-     */
-    public static void setDefaultStep (Step step)
-    {
-        if (step != getDefaultStep()) {
-            logger.info("Default drop step is now {0}", step);
-            constants.defaultStep.setValue(step);
-        }
-    }
-
     //~ Inner Classes ----------------------------------------------------------
-
     //-----------//
     // Constants //
     //-----------//
     private static final class Constants
-        extends ConstantSet
+            extends ConstantSet
     {
         //~ Instance fields ----------------------------------------------------
 
         private final Steps.Constant defaultStep = new Steps.Constant(
-            Steps.valueOf(Steps.LOAD),
-            "Default step executed when a file is dropped");
+                Steps.valueOf(Steps.LOAD),
+                "Default step launched when an image file is dropped");
+
     }
 
-    //----------//
-    // DropTask //
-    //----------//
-    private static class DropTask
-        extends BasicTask
+    //---------------//
+    // DropImageTask //
+    //---------------//
+    private static class DropImageTask
+            extends BasicTask
     {
         //~ Instance fields ----------------------------------------------------
 
         private final File file;
+
         private final Step target;
 
         //~ Constructors -------------------------------------------------------
-
-        public DropTask (File file,
-                         Step target)
+        public DropImageTask (File file,
+                              Step target)
         {
             this.file = file;
             this.target = target;
         }
 
         //~ Methods ------------------------------------------------------------
-
         @Override
         protected Void doInBackground ()
-            throws Exception
+                throws Exception
         {
-            logger.info("Dropping file {0}", file);
+            logger.info("Dropping image file {0}", file);
 
             Score score = new Score(file);
-            Stepping.processScore(Collections.singleton(target), score);
+            final Step loadStep = Steps.valueOf(Steps.LOAD);
+
+            if (target.equals(loadStep)) {
+                Stepping.processScore(Collections.EMPTY_SET, score);
+            } else {
+                Stepping.processScore(Collections.singleton(target), score);
+            }
 
             return null;
+        }
+    }
+
+    //----------------//
+    // DropScriptTask //
+    //----------------//
+    private static class DropScriptTask
+            extends BasicTask
+    {
+        //~ Instance fields ----------------------------------------------------
+
+        private final File file;
+
+        //~ Constructors -------------------------------------------------------
+        public DropScriptTask (File file)
+        {
+            this.file = file;
+        }
+
+        //~ Methods ------------------------------------------------------------
+        @Override
+        protected Void doInBackground ()
+                throws Exception
+        {
+            ScriptManager.getInstance().loadAndRun(file);
+
+            return null;
+        }
+    }
+
+    //---------//
+    // Default //
+    //---------//
+    private static class Default
+            extends Param<Step>
+    {
+
+        @Override
+        public Step getSpecific ()
+        {
+            return constants.defaultStep.getValue();
+        }
+
+        @Override
+        public boolean setSpecific (Step specific)
+        {
+            if (!getSpecific().equals(specific)) {
+                constants.defaultStep.setValue(specific);
+                logger.info("Default drop step is now ''{0}''", specific);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

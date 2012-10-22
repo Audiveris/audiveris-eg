@@ -16,25 +16,22 @@ import omr.Main;
 import omr.constant.Constant;
 import omr.constant.ConstantSet;
 
-import omr.glyph.ui.SymbolsEditor;
-
-
-import omr.log.Logger;
-import static omr.run.Orientation.*;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.logging.Level;
 import omr.glyph.Glyphs;
 import omr.glyph.facets.Glyph;
+import omr.glyph.ui.SymbolsEditor;
+
+import omr.log.Logger;
+
 import omr.run.RunsTable;
-import omr.run.RunsTableFactory;
 
 import omr.sheet.Sheet;
 
 import omr.step.StepException;
 
 import omr.util.StopWatch;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Class {@code GridBuilder} computes the grid of systems of a sheet
@@ -89,8 +86,7 @@ public class GridBuilder
         linesRetriever = new LinesRetriever(sheet, barsRetriever);
 
         runsViewer = (Main.getGui() != null)
-                     ? new RunsViewer(sheet, linesRetriever, barsRetriever)
-                     : null;
+                ? new RunsViewer(sheet, linesRetriever, barsRetriever) : null;
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -121,8 +117,9 @@ public class GridBuilder
 
             // Retrieve the major vertical barlines and thus the systems
             watch.start("retrieveSystemBars");
-            barsRetriever.retrieveSystemBars(Collections.EMPTY_SET,
-                                             Collections.EMPTY_SET);
+            barsRetriever.retrieveSystemBars(
+                    Collections.EMPTY_SET,
+                    Collections.EMPTY_SET);
 
             // Complete the staff lines w/ short sections & filaments left over
             watch.start("completeLines");
@@ -151,8 +148,7 @@ public class GridBuilder
             }
 
             if (Main.getGui() != null) {
-                sheet.getSymbolsEditor()
-                        .refresh();
+                sheet.getSymbolsEditor().refresh();
             }
         }
     }
@@ -167,8 +163,8 @@ public class GridBuilder
      * @param oldSticks former glyphs to discard
      * @param newSticks new glyphs to take as manual bar sticks
      */
-    public void updateBars (Collection< Glyph> oldSticks,
-                            Collection< Glyph> newSticks)
+    public void updateBars (Collection<Glyph> oldSticks,
+                            Collection<Glyph> newSticks)
     {
         logger.info("updateBars");
         logger.info("Old {0}", Glyphs.toString(oldSticks));
@@ -194,18 +190,12 @@ public class GridBuilder
     private void buildAllLags ()
     {
         final boolean showRuns = constants.showRuns.isSet()
-                && (Main.getGui() != null);
+                                 && (Main.getGui() != null);
         final StopWatch watch = new StopWatch("buildAllLags");
 
         try {
-            // Retrieve all foreground pixels into vertical runs
-            watch.start("wholeVertTable");
-
-            RunsTable wholeVertTable = new RunsTableFactory(
-                    VERTICAL,
-                    sheet.getPicture(),
-                    sheet.getPicture().getMaxForeground(),
-                    0).createTable("whole");
+            // We already have all foreground pixels as vertical runs
+            RunsTable wholeVertTable = sheet.getWholeVerticalTable();
 
             // Note: from that point on, we could simply discard the sheet picture
             // and save memory, since wholeVertTable contains all foreground pixels.
@@ -257,19 +247,17 @@ public class GridBuilder
     {
         //~ Instance fields ----------------------------------------------------
 
-        //
         Constant.Boolean showRuns = new Constant.Boolean(
                 false,
                 "Should we show view on runs?");
 
-        //
         Constant.Boolean printWatch = new Constant.Boolean(
                 false,
                 "Should we print out the stop watch?");
 
-        //
         Constant.Boolean buildDewarpedTarget = new Constant.Boolean(
                 false,
                 "Should we build a dewarped target?");
+
     }
 }

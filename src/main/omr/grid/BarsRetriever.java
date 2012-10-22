@@ -49,6 +49,7 @@ import omr.ui.util.UIUtilities;
 
 import omr.util.HorizontalSide;
 import static omr.util.HorizontalSide.*;
+import omr.util.VipUtil;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -58,14 +59,13 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -102,14 +102,11 @@ public class BarsRetriever
     /** Related staff manager. */
     private final StaffManager staffManager;
 
-    /** Related system manager. */
-    private final SystemManager systemManager;
-
     /** Long vertical filaments found, non sorted. */
     private final List<Glyph> filaments = new ArrayList<>();
 
     /** Intersections between staves and bar sticks. */
-    private final Map<StaffInfo, IntersectionSequence> crossings = new HashMap<>();
+    private final Map<StaffInfo, IntersectionSequence> crossings = new TreeMap<>(StaffInfo.byId);
 
     /**
      * System tops.
@@ -142,7 +139,6 @@ public class BarsRetriever
 
         // Companions
         staffManager = sheet.getStaffManager();
-        systemManager = sheet.getSystemManager();
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -211,19 +207,19 @@ public class BarsRetriever
             for (Glyph glyph : filaments) {
                 Point2D p = glyph.getStartPoint(VERTICAL);
                 double derivative = (glyph instanceof Filament)
-                                    ? ((Filament) glyph).slopeAt(p.getY(),
-                                                                 VERTICAL)
-                                    : glyph.getInvertedSlope();
+                        ? ((Filament) glyph).slopeAt(p.getY(),
+                        VERTICAL)
+                        : glyph.getInvertedSlope();
                 g.draw(new Line2D.Double(p.getX(), p.getY(),
-                                         p.getX() - (derivative * dy),
-                                         p.getY() - dy));
+                        p.getX() - (derivative * dy),
+                        p.getY() - dy));
                 p = glyph.getStopPoint(VERTICAL);
                 derivative = (glyph instanceof Filament)
-                             ? ((Filament) glyph).slopeAt(p.getY(), VERTICAL)
-                             : glyph.getInvertedSlope();
+                        ? ((Filament) glyph).slopeAt(p.getY(), VERTICAL)
+                        : glyph.getInvertedSlope();
                 g.draw(new Line2D.Double(p.getX(), p.getY(),
-                                         p.getX() + (derivative * dy),
-                                         p.getY() + dy));
+                        p.getX() + (derivative * dy),
+                        p.getY() + dy));
             }
         }
 
@@ -261,7 +257,7 @@ public class BarsRetriever
         recheckBarCandidates();
 
         // Check bars consistency within the same system
-        for (SystemInfo system : systemManager.getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             checkBarsAlignment(system);
         }
 
@@ -270,10 +266,10 @@ public class BarsRetriever
         partTops = retrievePartTops();
 
         logger.info("{0}Parts   top staff ids: {1}",
-                    sheet.getLogPrefix(), Arrays.toString(partTops));
+                sheet.getLogPrefix(), Arrays.toString(partTops));
 
         // Refine ending points for each bar line
-        for (SystemInfo system : systemManager.getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             refineBarsEndings(system);
         }
     }
@@ -316,7 +312,7 @@ public class BarsRetriever
             retrieveMajorBars(oldGlyphs, newGlyphs);
         } catch (Exception ex) {
             logger.warning(sheet.getLogPrefix()
-                    + "BarsRetriever cannot retrieveBars", ex);
+                           + "BarsRetriever cannot retrieveBars", ex);
         }
 
         try {
@@ -324,7 +320,7 @@ public class BarsRetriever
             buildSystems();
         } catch (Exception ex) {
             logger.warning(sheet.getLogPrefix()
-                    + "BarsRetriever cannot retrieveSystems", ex);
+                           + "BarsRetriever cannot retrieveSystems", ex);
         }
 
         // Adjust precise horizontal sides for systems, staves & lines
@@ -350,7 +346,7 @@ public class BarsRetriever
             for (LineInfo l : staff.getLines()) {
                 FilamentLine line = (FilamentLine) l;
                 line.setEndingPoints(getLineEnding(system, staff, line, LEFT),
-                                     getLineEnding(system, staff, line, RIGHT));
+                        getLineEnding(system, staff, line, RIGHT));
             }
 
             // Insert line intermediate points, if so needed
@@ -376,7 +372,7 @@ public class BarsRetriever
      */
     void adjustSystemBars ()
     {
-        for (SystemInfo system : systemManager.getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             try {
                 for (HorizontalSide side : HorizontalSide.values()) {
                     Object limit = system.getLimit(side);
@@ -400,7 +396,7 @@ public class BarsRetriever
                 }
             } catch (Exception ex) {
                 logger.warning("BarsRetriever can't adjust side bars of "
-                        + system.idString(), ex);
+                               + system.idString(), ex);
             }
         }
     }
@@ -437,7 +433,7 @@ public class BarsRetriever
     boolean isLong (Glyph stick)
     {
         return (stick != null)
-                && (stick.getLength(VERTICAL) >= params.minLongLength);
+               && (stick.getLength(VERTICAL) >= params.minLongLength);
     }
 
     //--------//
@@ -464,7 +460,7 @@ public class BarsRetriever
      */
     private void adjustSides ()
     {
-        for (SystemInfo system : systemManager.getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             try {
                 for (HorizontalSide side : HorizontalSide.values()) {
                     // Determine the side limit of the system
@@ -473,9 +469,9 @@ public class BarsRetriever
 
                 if (logger.isFineEnabled()) {
                     logger.fine("System#{0} left:{1} right:{2}", system.getId(),
-                                system.getLimit(LEFT).getClass()
+                            system.getLimit(LEFT).getClass()
                             .getSimpleName(),
-                                system.getLimit(RIGHT).getClass()
+                            system.getLimit(RIGHT).getClass()
                             .getSimpleName());
                 }
 
@@ -483,7 +479,7 @@ public class BarsRetriever
                 adjustStaffLines(system);
             } catch (Exception ex) {
                 logger.warning("BarsRetriever cannot adjust system#"
-                        + system.getId(), ex);
+                               + system.getId(), ex);
             }
         }
     }
@@ -511,7 +507,7 @@ public class BarsRetriever
         if (bar != null) {
             // We use the heaviest stick among the system-embracing bar sticks
             SortedSet<Glyph> allSticks = new TreeSet<>(
-                    Glyph.reverseWeightComparator);
+                    Glyph.byReverseWeight);
 
             for (Glyph stick : bar.getSticksAncestors()) {
                 Point2D start = stick.getStartPoint(VERTICAL);
@@ -520,7 +516,7 @@ public class BarsRetriever
                 StaffInfo botStaff = staffManager.getStaffAt(stop);
 
                 if ((topStaff == system.getFirstStaff())
-                        && (botStaff == system.getLastStaff())) {
+                    && (botStaff == system.getLastStaff())) {
                     allSticks.add(stick);
                 }
             }
@@ -529,7 +525,7 @@ public class BarsRetriever
                 drivingStick = allSticks.first();
 
                 logger.fine("System#{0} {1} drivingStick: {2}",
-                            system.getId(), side, drivingStick);
+                        system.getId(), side, drivingStick);
 
                 // Polish long driving stick, if needed
                 if (isLong(drivingStick) && drivingStick instanceof Filament) {
@@ -558,7 +554,7 @@ public class BarsRetriever
             }
 
             logger.fine("System#{0} {1} barycenter: {2}",
-                        system.getId(), side, bary);
+                    system.getId(), side, bary);
 
             double slope = sheet.getSkew().getSlope();
             BasicLine line = new BasicLine();
@@ -583,10 +579,10 @@ public class BarsRetriever
             }
 
             logger.info("{0}Systems top staff ids: {1}", sheet.getLogPrefix(),
-                        Arrays.toString(systemTops));
+                    Arrays.toString(systemTops));
 
             // Create system frames using staves tops
-            systemManager.setSystems(createSystems(systemTops));
+            sheet.setSystems(createSystems(systemTops));
 
             // Merge of systems as much as possible
             if (mergeSystems()) {
@@ -610,9 +606,9 @@ public class BarsRetriever
     {
         // Filaments factory
         FilamentsFactory factory = new FilamentsFactory(sheet.getScale(),
-                                                        sheet.getNest(),
-                                                        VERTICAL,
-                                                        Filament.class);
+                sheet.getNest(),
+                VERTICAL,
+                Filament.class);
 
         // Factory parameters adjustment
         factory.setMaxSectionThickness(constants.maxSectionThickness);
@@ -640,13 +636,13 @@ public class BarsRetriever
     private boolean canConnectSystems (SystemInfo prevSystem,
                                        SystemInfo nextSystem)
     {
-        List<SystemInfo> systems = systemManager.getSystems();
+        List<SystemInfo> systems = sheet.getSystems();
         Skew skew = sheet.getSkew();
 
         if (logger.isFineEnabled()) {
             logger.info("Checking S#{0}({1}) - S#{2}({3})", prevSystem.getId(),
-                        prevSystem.getStaves().size(), nextSystem.getId(),
-                        nextSystem.getStaves().size());
+                    prevSystem.getStaves().size(), nextSystem.getId(),
+                    nextSystem.getStaves().size());
         }
 
         StaffInfo prevStaff = prevSystem.getLastStaff();
@@ -677,25 +673,25 @@ public class BarsRetriever
 
                     // Check dy
                     double dy = Math.abs(Math.min(nextY, nextPoint.getY())
-                            - Math.max(prevY, prevPoint.getY()));
+                                         - Math.max(prevY, prevPoint.getY()));
 
                     logger.fine("F{0}-F{1} dx:{2} vs {3}, dy:{4} vs {5}",
-                                prevStick.getId(), nextStick.getId(),
-                                (float) dx, params.maxBarPosGap, (float) dy,
-                                params.maxBarCoordGap);
+                            prevStick.getId(), nextStick.getId(),
+                            (float) dx, params.maxBarPosGap, (float) dy,
+                            params.maxBarCoordGap);
 
                     if ((dx <= params.maxBarPosGap)
-                            && (dy <= params.maxBarCoordGap)) {
+                        && (dy <= params.maxBarCoordGap)) {
                         logger.info("Merging systems S#{0}({1}) - S#{2}({3})",
-                                    prevSystem.getId(),
-                                    prevSystem.getStaves().size(),
-                                    nextSystem.getId(),
-                                    nextSystem.getStaves().size());
+                                prevSystem.getId(),
+                                prevSystem.getStaves().size(),
+                                nextSystem.getId(),
+                                nextSystem.getStaves().size());
                         prevStick.stealSections(nextStick);
 
                         return tryRangeConnection(
                                 systems.subList(systems.indexOf(prevSystem),
-                                                1 + systems.indexOf(nextSystem)));
+                                1 + systems.indexOf(nextSystem)));
                     }
                 }
             }
@@ -717,7 +713,7 @@ public class BarsRetriever
                 if (dy <= params.maxBarCoordGap) {
                     return tryRangeConnection(systems.subList(systems.indexOf(
                             prevSystem),
-                                                              1
+                            1
                             + systems.indexOf(nextSystem)));
                 }
             }
@@ -739,7 +735,7 @@ public class BarsRetriever
                 if (dy <= params.maxBarCoordGap) {
                     return tryRangeConnection(systems.subList(systems.indexOf(
                             prevSystem),
-                                                              1
+                            1
                             + systems.indexOf(nextSystem)));
                 }
             }
@@ -815,14 +811,14 @@ public class BarsRetriever
                     }
 
                     if ((bestIdx != null)
-                            && (Math.abs(dists[bestIdx])
-                                <= params.maxAlignmentDistance)) {
+                        && (Math.abs(dists[bestIdx])
+                            <= params.maxAlignmentDistance)) {
                         alignments.get(bestIdx)
                                 .addInter(iStaff, loc);
                     } else {
                         // Insert a new alignment at proper index
                         BarAlignment align = new BarAlignment(sheet,
-                                                              staffCount);
+                                staffCount);
                         align.addInter(iStaff, loc);
 
                         if (bestIdx == null) {
@@ -909,12 +905,12 @@ public class BarsRetriever
                 staffTop = tops[i];
 
                 system = new SystemInfo(++systemId, sheet,
-                                        staffManager.getRange(staff, staff));
+                        staffManager.getRange(staff, staff));
                 newSystems.add(system);
             } else {
                 // Continuing current system
                 system.setStaves(staffManager.getRange(system.getFirstStaff(),
-                                                       staff));
+                        staff));
             }
         }
 
@@ -944,7 +940,7 @@ public class BarsRetriever
 
             // Pick up the heaviest bar stick
             SortedSet<Glyph> allSticks = new TreeSet<>(
-                    Glyph.reverseWeightComparator);
+                    Glyph.byReverseWeight);
 
             // Use long sticks first
             for (Glyph stick : bar.getSticksAncestors()) {
@@ -1020,7 +1016,7 @@ public class BarsRetriever
     //--------------//
     private boolean mergeSystems ()
     {
-        List<SystemInfo> systems = systemManager.getSystems();
+        List<SystemInfo> systems = sheet.getSystems();
         boolean modified = false;
 
         // Check connection of left barSticks across systems
@@ -1108,8 +1104,8 @@ public class BarsRetriever
 
         // First, get a rough intersection
         Point2D pt = LineUtilities.intersection(line.getEndPoint(LEFT),
-                                                line.getEndPoint(RIGHT),
-                                                startPoint, stopPoint);
+                line.getEndPoint(RIGHT),
+                startPoint, stopPoint);
 
         // Second, get a precise ordinate
         double y = line.yAt(pt.getX());
@@ -1204,7 +1200,7 @@ public class BarsRetriever
                     BarInfo leftBar = staff.getBar(LEFT);
 
                     if ((leftBar != null)
-                            && leftBar.getSticksAncestors().contains(stick)) {
+                        && leftBar.getSticksAncestors().contains(stick)) {
                         continue;
                     }
 
@@ -1217,9 +1213,9 @@ public class BarsRetriever
                         StaffInfo topStaff = staffManager.getStaffAt(start);
                         stick.setEndingPoints(
                                 preciseIntersection(stick,
-                                                    topStaff.getFirstLine()),
+                                topStaff.getFirstLine()),
                                 preciseIntersection(stick,
-                                                    botStaff.getLastLine()));
+                                botStaff.getLastLine()));
                     }
                 }
             }
@@ -1300,8 +1296,8 @@ public class BarsRetriever
      */
     private Integer[] retrievePartTops ()
     {
-        systemManager.setPartTops(partTops = new Integer[staffManager
-                .getStaffCount()]);
+        staffManager.setPartTops(partTops =
+                new Integer[staffManager.getStaffCount()]);
 
         for (StaffInfo staff : staffManager.getStaves()) {
             ///logger.info("Staff#" + staff.getId());
@@ -1320,7 +1316,7 @@ public class BarsRetriever
 
                 // Do not use left bar items (they define systems, not parts)
                 if ((leftBar != null)
-                        && leftBar.getSticksAncestors().contains(stick)) {
+                    && leftBar.getSticksAncestors().contains(stick)) {
                     ///logger.info("Skipping left side  stick#" + stick.getId());
                     continue;
                 }
@@ -1335,7 +1331,7 @@ public class BarsRetriever
                 // Use right bar, if any, even if not anchored ...
                 // Or use a plain bar stick provided it is anchored on both sides
                 if ((rightBar != null && rightBar.getSticksAncestors().contains(
-                     stick)) || (stick.getResult() == BarsChecker.BAR_PART_DEFINING)) {
+                        stick)) || (stick.getResult() == BarsChecker.BAR_PART_DEFINING)) {
                     Point2D start = stick.getStartPoint(VERTICAL);
                     StaffInfo topStaff = staffManager.getStaffAt(start);
                     int top = topStaff.getId();
@@ -1391,12 +1387,12 @@ public class BarsRetriever
                     } else {
                         // Perhaps a pack of bars, check total width
                         double width = Math.max(Math.abs(x - seq.first().x),
-                                                Math.abs(x - seq.last().x));
+                                Math.abs(x - seq.last().x));
 
                         if (((side == LEFT)
                              && (width <= params.maxLeftBarPackWidth))
-                                || ((side == RIGHT)
-                                    && (width <= params.maxRightBarPackWidth))) {
+                            || ((side == RIGHT)
+                                && (width <= params.maxRightBarPackWidth))) {
                             seq.add(crossing);
                         }
                     }
@@ -1416,14 +1412,14 @@ public class BarsRetriever
             } else {
                 if (logger.isFineEnabled()) {
                     logger.info("Staff#{0} {1} discarded stick#{2}",
-                                staff.getId(), side,
-                                seq.last().getStickAncestor().getId());
+                            staff.getId(), side,
+                            seq.last().getStickAncestor().getId());
                 }
             }
         } else {
             if (logger.isFineEnabled()) {
                 logger.fine("Staff#{0} no {1} bar {2}", staff.getId(), side,
-                            Glyphs.toString(StickIntersection.sticksOf(
+                        Glyphs.toString(StickIntersection.sticksOf(
                         staffCrossings)));
             }
         }
@@ -1517,7 +1513,7 @@ public class BarsRetriever
 
                             if (seqStick != barStick) {
                                 logger.fine("Including F{0} to F{1}",
-                                            barStick.getId(), seqStick.getId());
+                                        barStick.getId(), seqStick.getId());
                                 seqStick.stealSections(barStick);
                             }
                         } else {
@@ -1547,8 +1543,8 @@ public class BarsRetriever
      */
     private Integer[] retrieveSystemTops ()
     {
-        systemManager.setSystemTops(systemTops = new Integer[staffManager
-                .getStaffCount()]);
+        staffManager.setSystemTops(systemTops =
+                new Integer[staffManager.getStaffCount()]);
 
         for (StaffInfo staff : staffManager.getStaves()) {
             int bot = staff.getId();
@@ -1563,7 +1559,7 @@ public class BarsRetriever
 
                     for (int id = top; id <= bot; id++) {
                         if ((systemTops[id - 1] == null)
-                                || (top < systemTops[id - 1])) {
+                            || (top < systemTops[id - 1])) {
                             systemTops[id - 1] = top;
                         }
                     }
@@ -1602,7 +1598,7 @@ public class BarsRetriever
         }
 
         logger.info("Staves connection from {0} to {1}", topId,
-                    range.get(range.size() - 1).getLastStaff().getId());
+                range.get(range.size() - 1).getLastStaff().getId());
 
         return true;
     }
@@ -1770,6 +1766,7 @@ public class BarsRetriever
         Constant.String verticalVipSections = new Constant.String(
                 "",
                 "(Debug) Comma-separated list of VIP sections");
+
     }
 
     //------------//
@@ -1855,7 +1852,8 @@ public class BarsRetriever
             maxBarCoordGap = scale.toPixels(constants.maxBarCoordGap);
 
             // VIPs
-            vipSections = decode(constants.verticalVipSections.getValue());
+            vipSections = VipUtil.decodeIds(
+                    constants.verticalVipSections.getValue());
 
             if (logger.isFineEnabled()) {
                 Main.dumping.dump(this);
@@ -1864,25 +1862,6 @@ public class BarsRetriever
             if (!vipSections.isEmpty()) {
                 logger.info("Vertical VIP sections: {0}", vipSections);
             }
-        }
-
-        //~ Methods ------------------------------------------------------------
-        private List<Integer> decode (String str)
-        {
-            List<Integer> ids = new ArrayList<>();
-
-            // Retrieve the list of ids
-            StringTokenizer st = new StringTokenizer(str, ",");
-
-            while (st.hasMoreTokens()) {
-                try {
-                    ids.add(Integer.decode(st.nextToken().trim()));
-                } catch (Exception ex) {
-                    logger.warning("Illegal id", ex);
-                }
-            }
-
-            return ids;
         }
     }
 }

@@ -17,7 +17,6 @@ import omr.log.Logger;
 
 import omr.sheet.SystemInfo;
 
-import omr.text.TextCheckerPattern;
 import omr.text.TextPattern;
 
 /**
@@ -62,7 +61,7 @@ public class PatternsChecker
             new CaesuraPattern(system),
             new BeamHookPattern(system),
             // Refresh ...
-            new RefreshPattern(system),
+            new RefreshPattern(system, false),
             new DoubleBeamPattern(system),
             new FermataDotPattern(system),
             new FlagPattern(system),
@@ -76,7 +75,7 @@ public class PatternsChecker
             new ClefPattern(system),
             new TimePattern(system),
             // Refresh ...
-            new RefreshPattern(system),
+            new RefreshPattern(system, true),
             //
             // Text patterns
             //            new TextBorderPattern(system), // Glyphs -> Text
@@ -108,7 +107,7 @@ public class PatternsChecker
         int totalModifs = 0;
         StringBuilder sb = new StringBuilder();
 
-        system.inspectGlyphs(Grades.symbolMinGrade);
+        system.inspectGlyphs(Grades.symbolMinGrade, false);
 
         for (GlyphPattern pattern : patterns) {
             logger.fine("Starting {0}", pattern);
@@ -125,14 +124,12 @@ public class PatternsChecker
 
                 totalModifs += modifs;
             } catch (Throwable ex) {
-                logger.warning(
-                        system.idString() + " error running pattern "
-                        + pattern.name,
-                        ex);
+                logger.warning(system.getLogPrefix() + 
+                               " error running pattern " + pattern.name, ex);
             }
         }
 
-        system.inspectGlyphs(Grades.symbolMinGrade);
+        system.inspectGlyphs(Grades.symbolMinGrade, false);
 
         if (totalModifs > 0) {
             logger.fine("S#{0} Patterns{1}", system.getId(), sb);
@@ -152,18 +149,22 @@ public class PatternsChecker
     private static class RefreshPattern
             extends GlyphPattern
     {
+
+        private final boolean wide;
         //~ Constructors -------------------------------------------------------
 
-        public RefreshPattern (SystemInfo system)
+        public RefreshPattern (SystemInfo system,
+                               boolean wide)
         {
             super("Refresh", system);
+            this.wide = wide;
         }
 
         //~ Methods ------------------------------------------------------------
         @Override
         public int runPattern ()
         {
-            system.inspectGlyphs(Grades.symbolMinGrade);
+            system.inspectGlyphs(Grades.symbolMinGrade, wide);
 
             return 0;
         }

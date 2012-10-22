@@ -12,24 +12,29 @@
 package omr.text;
 
 import omr.constant.ConstantSet;
+
 import omr.glyph.Glyphs;
 import omr.glyph.facets.Glyph;
 
 import omr.grid.LineInfo;
 import omr.grid.StaffInfo;
+
 import omr.lag.Section;
 
 import omr.log.Logger;
 
 import omr.math.GeoPath;
 import omr.math.ReversePathIterator;
+
 import omr.score.common.PixelRectangle;
+import omr.score.entity.Page;
 
 
 import omr.sheet.Scale;
 import omr.sheet.SystemInfo;
 
 import omr.util.HorizontalSide;
+import omr.util.LiveParam;
 import omr.util.Navigable;
 import omr.util.Predicate;
 
@@ -101,8 +106,11 @@ public class TextScanner
      */
     public void scanSystem ()
     {
-        final String language = system.getSheet().getScore().getLanguage();
+        final Page page = system.getSheet().getPage();
+        final LiveParam<String> textParam = page.getTextParam();
+        final String language = textParam.getTarget();
         logger.fine("scanSystem lan:{0} on {1}", language, system.idString());
+        textParam.setActual(language);
 
         // Retrieve glyphs
         allGlyphs = retrieveRegionGlyphs();
@@ -135,8 +143,8 @@ public class TextScanner
             List<TextLine> newLines = textBuilder.recomposeLines(lines);
 
             textBuilder.mapGlyphs(newLines,
-                                  allSections,
-                                  language);
+                    allSections,
+                    language);
         } else {
             logger.info("{0} No line", system.idString());
         }
@@ -163,47 +171,46 @@ public class TextScanner
 
         // Safer
         system.removeInactiveGlyphs();
-        
+
         // Discard glyphs that intersect a stave core area
         return Glyphs.lookupGlyphs(system.getGlyphs(),
-                                   new Predicate<Glyph>()
-        {
-            @Override
-            public boolean check (Glyph glyph)
-            {
-                // Reject manual non-text glyphs
-                if (glyph.isManualShape() && !glyph.isText()) {
-                    return false;
-                }
+                new Predicate<Glyph>()
+                {
+                    @Override
+                    public boolean check (Glyph glyph)
+                    {
+                        // Reject manual non-text glyphs
+                        if (glyph.isManualShape() && !glyph.isText()) {
+                            return false;
+                        }
 
-                // Keep known text
-                if (glyph.isText()) {
-                    return true;
-                }
-                
-                // Check position wrt closest staff
-                StaffInfo staff = system.getStaffAt(glyph.getAreaCenter());
-                GeoPath contour = pathMap.get(staff);
+                        // Keep known text
+                        if (glyph.isText()) {
+                            return true;
+                        }
 
-                if (contour.intersects(glyph.getBounds())) {
-                    return false;
-                }
+                        // Check position wrt closest staff
+                        StaffInfo staff = system.getStaffAt(glyph.getAreaCenter());
+                        GeoPath contour = pathMap.get(staff);
+                        if (contour.intersects(glyph.getBounds())) {
+                            return false;
+                        }
 
-                // Discard too large glyphs
-                PixelRectangle bounds = glyph.getBounds();
+                        // Discard too large glyphs
+                        PixelRectangle bounds = glyph.getBounds();
 
-                if (bounds.width > params.maxGlyphWidth) {
-                    return false;
-                }
+                        if (bounds.width > params.maxGlyphWidth) {
+                            return false;
+                        }
 
-                if (bounds.height > params.maxGlyphHeight) {
-                    return false;
-                }
+                        if (bounds.height > params.maxGlyphHeight) {
+                            return false;
+                        }
 
-                // All tests are OK
-                return true;
-            }
-        });
+                        // All tests are OK
+                        return true;
+                    }
+                });
     }
 
     //----------------//
@@ -255,14 +262,14 @@ public class TextScanner
     private GeoPath getStaffContour (StaffInfo staff)
     {
         GeoPath topLimit = getSampledLine(staff.getFirstLine(),
-                                          -params.marginAbove);
+                -params.marginAbove);
         GeoPath botLimit = getSampledLine(staff.getLastLine(),
-                                          params.marginBelow);
+                params.marginBelow);
 
         GeoPath contour = new GeoPath();
         contour.append(topLimit, false);
         contour.append(ReversePathIterator.getReversePathIterator(botLimit),
-                       true);
+                true);
         contour.closePath();
 
         // For visual check
@@ -302,12 +309,13 @@ public class TextScanner
                 "Minimum distance right of staff");
 
         Scale.Fraction maxGlyphWidth = new Scale.Fraction(
-                5,
+                7,
                 "Maximum glyph width");
 
         Scale.Fraction maxGlyphHeight = new Scale.Fraction(
                 4,
                 "Maximum glyph height");
+
     }
 
     //------------//

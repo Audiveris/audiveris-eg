@@ -11,9 +11,9 @@
 // </editor-fold>
 package omr.score.entity;
 
-import omr.constant.ConstantSet;
-
 import omr.log.Logger;
+
+import omr.run.FilterDescriptor;
 
 import omr.score.Score;
 import omr.score.common.PixelDimension;
@@ -25,11 +25,11 @@ import omr.sheet.Sheet;
 
 import omr.step.StepException;
 
+import omr.util.LiveParam;
 import omr.util.TreeNode;
 
 import java.awt.image.RenderedImage;
 import java.util.List;
-import java.util.logging.Level;
 
 /**
  * Class {@code Page} represents a page in the score hierarchy,
@@ -44,34 +44,37 @@ public class Page
 {
     //~ Static fields/initializers ---------------------------------------------
 
-    /** Specific application parameters */
-    private static final Constants constants = new Constants();
-
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(Page.class);
 
     //~ Instance fields --------------------------------------------------------
 
-    /** Index of page */
+    /** Index of page, counted from 1, in the image file. */
     private final int index;
 
-    /** Page ID */
+    /** Page ID. */
     private final String id;
 
-    /** Link with image */
+    /** Related sheet. */
     private Sheet sheet;
 
-    /** Page global scale */
+    /** Page global scale. */
     private Scale scale;
 
-    /** ScorePart list for the page */
+    /** ScorePart list for the page. */
     private List<ScorePart> partList;
 
-    /** Number of measures in this page */
+    /** Number of measures in this page. */
     private Integer measureCount;
 
-    /** Progression of measure id within this page */
+    /** Progression of measure id within this page. */
     private Integer deltaMeasureId;
+    
+    /** Param for pixel filter. */
+    private final LiveParam<FilterDescriptor> filterContext;
+    
+    /** Param for text language. */
+    private final LiveParam<String> textContext;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -81,6 +84,8 @@ public class Page
     /**
      * Creates a new Page object.
      * @param score the containing score
+     * @param index page initial index in the containing image file, counted
+     * from 1.
      */
     public Page (Score         score,
                  int           index,
@@ -96,21 +101,28 @@ public class Page
             id = score.getRadix();
         }
 
+        filterContext = new LiveParam<>(score.getFilterParam());
+        textContext = new LiveParam<>(score.getTextParam());
+        
         sheet = new Sheet(this, image);
     }
 
     //~ Methods ----------------------------------------------------------------
 
-    //-------------------//
-    // getMinSlotSpacing //
-    //-------------------//
-    /**
-     * Report the minimum acceptable spacing between slots.
-     * @return the minimum spacing (in interline fraction)
-     */
-    public static Scale.Fraction getMinSlotSpacing ()
+    //----------------//
+    // getFilterParam //
+    //----------------//
+    public LiveParam<FilterDescriptor> getFilterParam ()
     {
-        return constants.minSlotSpacing;
+        return filterContext;
+    }
+
+    //--------------//
+    // getTextParam //
+    //--------------//
+    public LiveParam<String> getTextParam ()
+    {
+        return textContext;
     }
 
     //--------//
@@ -180,7 +192,7 @@ public class Page
            .append(sb)
            .append("]");
 
-        logger.info("{0}{1}", new Object[]{sheet.getLogPrefix(), msg.toString()});
+        logger.info("{0}{1}", sheet.getLogPrefix(), msg.toString());
     }
 
     //-------------------//
@@ -450,21 +462,5 @@ public class Page
     public String toString ()
     {
         return "{Page " + id + "}";
-    }
-
-    //~ Inner Classes ----------------------------------------------------------
-
-    //-----------//
-    // Constants //
-    //-----------//
-    private static final class Constants
-        extends ConstantSet
-    {
-        //~ Instance fields ----------------------------------------------------
-
-        /** Minimum spacing between slots before alerting user */
-        private final Scale.Fraction minSlotSpacing = new Scale.Fraction(
-            1.1d,
-            "Minimum spacing between slots before alerting user");
     }
 }

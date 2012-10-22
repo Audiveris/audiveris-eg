@@ -10,9 +10,11 @@
         <meta name="description" content="Root of Audiveris presentation" />
         
         <meta name="author" content="Hervé Bitteur" />
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">        
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">     
+            
         <link rel="icon" href="branding/images/audiveris-icons-256.ico" type="image/x-icon" />
         <link rel="stylesheet" href="branding/css/global.css"/>
+            
         <style type="text/css">
             /*<![CDATA[*/
             #highlights {
@@ -45,6 +47,9 @@
             #news {
                 width: 180px;
             }
+            #support {
+                width: 180px;
+            }
             #development {
                 width: 330px;
             }
@@ -61,7 +66,7 @@
         <script src="branding/js/header.js"></script> 
         
         <div class="main">
-            <div class="block" id="abstract">
+            <article id="abstract">
                 <b><i>Audiveris</i></b> 
                 is an open-source <b><i>Optical Music Recognition</i></b> 
                 software which processes the image of a music sheet to 
@@ -83,7 +88,7 @@
                         <li>Any number of pages per score, of parts per system,
                             of staves per part, of voices per measure</li>
                         <li>Internal neural network trainable by end user</li>
-                        <li>Available on Windows and Linux platforms</li>
+                        <li>Available on Windows, Linux and Mac</li>
                         <li>GNU GPL V2 license</li>
                     </ul>
                 </div>
@@ -92,40 +97,46 @@
                         <img src="docs/images/dichterliebe-pict-voices-220.png">
                     </a>
                 </div>
-            </div>
+            </article>
 
-            <div class="block" id="news">
+            <article id="news">
                 <h2>News</h2>
                 <ul class="light">
-                    <li><a class="light" href="docs/manual/installation.html">Just switched to Tesseract 3.x</a>
-                        <div class="creation-date">June 13, 2012</div>
+                    <li><a class="light" href="docs/manual/releases.html">V4.2 release</a>
+                        <div class="creation-date">October xx, 2012</div>
                     </li>
-                    <li><a class="light" href="docs/manual/handbook.html">Handbook available</a>
-                        <div class="creation-date">May 23, 2012</div>
+                    <li><a class="light" href="http://kenai.com/projects/audiveris/downloads">Windows installers for x86 and x64 arch.</a>
+                        <div class="creation-date">August 3, 2012</div>
                     </li>
-                    <li><a class="light" href="http://kenai.com/projects/audiveris/downloads/download/audiveris-4.1beta.3162.msi">Windows installer released</a>
-                        <div class="creation-date">February 22, 2012</div>
-                    </li>
-                    <li><a class="light" href="http://kenai.com/projects/audiveris/downloads">New V4.1beta released</a>
-                        <div class="creation-date">February 1, 2012</div>
-                    </li>
-                    <li><a class="light" href="http://fosdem.org/2012/">Audiveris at FOSDEM 2012</a>
+                    <li><a class="light" href="docs/manual/AudiverisFosdem2012.v3.pdf">Presentation at FOSDEM 2012</a>
                         <div class="creation-date">January 11, 2012</div>
                     </li>
                 </ul>
+            </article>
 
-            </div>
+            <article id="support">
+                <h2>Support</h2>
+                <ul>
+                    <li><a href="http://kenai.com/jira/browse/AUDIVERIS">JIRA issue tracker</a>
+                        to manage bugs and improvements.                        
+                    </li>
+                    <li><a href="http://kenai.com/projects/audiveris/forums/message-forum">Community forum</a>
+                        for informal discussions
+                    </li>
+                </ul>
 
-            <div class="block" id="development">
+            </article>
+
+            <article id="development">
                 <h2>Development</h2>
                 <p>Audiveris is developed in Java, and invokes Google Tesseract
                     OCR (C++) for text recognition.</p>
                 <p>Project components (source code, binaries, issues tracking, forum)
                     are available on <a href="http://kenai.com/projects/audiveris/">
                         Kenai</a>.</p>
-            </div>
+            </article>
 
-            <div class="block" id="help">
+            <article id="help">
                 <h2>Help wanted for</h2>
                 <ul>
                     <li>Coupling with <a href="http://musescore.org">MuseScore</a>
@@ -134,8 +145,8 @@
                     <li>Automated evaluation of transcription results</li>
                     <li>Microedition features to enable crowd-sourcing approaches</li>
                 </ul>
-            </div>
-        </div>
+            </article>
+        </div>       
         
         <script src="branding/js/footer.js"></script> 
     </body>

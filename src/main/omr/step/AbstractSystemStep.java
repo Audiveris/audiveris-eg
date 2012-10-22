@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 
 /**
- * Class {@code AbstractSystemStep} is a basis for any step working in 
+ * Class {@code AbstractSystemStep} is a basis for any step working in
  * parallel on the sheet systems.
  *
  * @author Hervé Bitteur
@@ -46,18 +46,16 @@ public abstract class AbstractSystemStep
      *
      * @param level       score level only or sheet level
      * @param mandatory   step must be done before any output
-     * @param redoable    step can be redone at will
      * @param label       The title of the related (or most relevant) view tab
      * @param description A step description for the end user
      */
     public AbstractSystemStep (String name,
                                Level level,
                                Mandatory mandatory,
-                               Redoable redoable,
                                String label,
                                String description)
     {
-        super(name, level, mandatory, redoable, label, description);
+        super(name, level, mandatory, label, description);
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -104,7 +102,8 @@ public abstract class AbstractSystemStep
     // doEpilog //
     //----------//
     /**
-     * Final processing for this step, once all systems have been processed
+     * Final processing for this step, once all systems have been
+     * processed.
      *
      * @param systems the systems which have been updated
      * @throws StepException raised if processing failed
@@ -120,8 +119,8 @@ public abstract class AbstractSystemStep
     // doProlog //
     //----------//
     /**
-     * Do preliminary common work before all systems processings are launched in
-     * parallel
+     * Do preliminary common work before all systems processings are
+     * launched in parallel.
      *
      * @param systems the systems which will be updated
      * @throws StepException raised if processing failed
@@ -143,7 +142,7 @@ public abstract class AbstractSystemStep
      * @param sheet   the containing sheet
      */
     private void doitPerSystem (Collection<SystemInfo> systems,
-                                Sheet sheet)
+                                final Sheet sheet)
     {
         try {
             Collection<Callable<Void>> tasks = new ArrayList<>();
@@ -157,21 +156,20 @@ public abstract class AbstractSystemStep
                 tasks.add(
                         new Callable<Void>()
                         {
-
                             @Override
                             public Void call ()
                                     throws Exception
                             {
                                 try {
                                     logger.fine("{0} doSystem #{1}",
-                                                new Object[]{
-                                                AbstractSystemStep.this, system.
-                                                getId()});
+                                            AbstractSystemStep.this,
+                                            system.idString());
 
                                     doSystem(system);
                                 } catch (Exception ex) {
-                                    logger.warning(
-                                            "Interrupt on " + system,
+                                    logger.warning(sheet.getLogPrefix()
+                                                   + "Interrupt on "
+                                                   + system.idString(),
                                             ex);
                                 }
 

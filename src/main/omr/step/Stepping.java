@@ -11,9 +11,6 @@
 // </editor-fold>
 package omr.step;
 
-import omr.constant.Constant;
-import omr.constant.ConstantSet;
-
 import omr.log.Logger;
 
 import omr.score.Score;
@@ -53,9 +50,6 @@ import javax.swing.SwingUtilities;
 public class Stepping
 {
     //~ Static fields/initializers ---------------------------------------------
-
-    /** Specific application parameters */
-    private static final Constants constants = new Constants();
 
     /** Usual logger utility */
     private static final Logger logger = Logger.getLogger(Stepping.class);
@@ -97,9 +91,9 @@ public class Stepping
      * @param sheet the sheet to be processed
      * @throws StepException
      */
-    public static void doOneSheetStep (final Step step,
-                                       Sheet sheet,
-                                       Collection<SystemInfo> systems)
+    private static void doOneSheetStep (final Step step,
+                                        Sheet sheet,
+                                        Collection<SystemInfo> systems)
             throws StepException
     {
         long startTime = System.currentTimeMillis();
@@ -111,7 +105,7 @@ public class Stepping
         final long stopTime = System.currentTimeMillis();
         final long duration = stopTime - startTime;
         logger.fine("{0}{1} completed in {2} ms",
-                    sheet.getLogPrefix(), step, duration);
+                sheet.getLogPrefix(), step, duration);
 
         // Record this in sheet->score bench
         sheet.getBench().recordStep(step, duration);
@@ -173,8 +167,8 @@ public class Stepping
      * @param sheet the sheet concerned
      * @param step  the step notified
      */
-    public static void notifyStep (final Sheet sheet,
-                                   final Step step)
+    static void notifyStep (final Sheet sheet,
+                            final Step step)
     {
         if (monitor != null) {
             final boolean finished = sheet.getCurrentStep() == null;
@@ -246,6 +240,7 @@ public class Stepping
 
         try {
             // Determine starting step and stopping step
+            final Step loadStep = Steps.valueOf(Steps.LOAD);
             Step start;
             Step stop;
 
@@ -261,9 +256,9 @@ public class Stepping
                 Step firstDesired = orderedSteps.first();
                 start = (latest == null) ? first
                         : ((latest == firstDesired) ? firstDesired : next(
-                           latest));
+                        latest));
                 stop = (Steps.compare(latest, orderedSteps.last()) >= 0)
-                       ? latest : orderedSteps.last();
+                        ? latest : orderedSteps.last();
             }
 
             // Add all intermediate mandatory steps
@@ -275,7 +270,6 @@ public class Stepping
 
             // Remove the LOAD step (unless it is explicitly desired)
             // LOAD step may appear only in reprocessSheet()
-            Step loadStep = Steps.valueOf(Steps.LOAD);
 
             if (!desiredSteps.contains(loadStep)) {
                 orderedSteps.remove(loadStep);
@@ -331,6 +325,30 @@ public class Stepping
                                        Collection<SystemInfo> impactedSystems,
                                        boolean imposed)
     {
+        reprocessSheet(step, sheet, impactedSystems, imposed, true);
+    }
+
+    //----------------//
+    // reprocessSheet //
+    //----------------//
+    /**
+     * For just a given sheet, update the steps already done, starting
+     * from the provided step.
+     * This method will try to minimize the systems to rebuild in each step, by
+     * processing only the provided "impacted" systems.
+     *
+     * @param step            the step to restart from
+     * @param impactedSystems the ordered set of systems to rebuild, or null
+     *                        if all systems must be rebuilt
+     * @param imposed         flag to indicate that update is imposed
+     * @param merge           true if step SCORE (merge of pages) is allowed
+     */
+    public static void reprocessSheet (Step step,
+                                       Sheet sheet,
+                                       Collection<SystemInfo> impactedSystems,
+                                       boolean imposed,
+                                       boolean merge)
+    {
         logger.fine("reprocessSheet {0} on {1}", step, sheet);
 
         // Sanity checks
@@ -352,15 +370,21 @@ public class Stepping
             impactedSystems = sheet.getSystems();
         }
 
-        logger.fine("{0}Rebuild launched from {1} on{2}",
-                    sheet.getLogPrefix(),
-                    step,
-                    SystemInfo.toString(impactedSystems));
+        logger.fine("{0}Rebuild launched from {1} on {2}",
+                sheet.getLogPrefix(),
+                step,
+                SystemInfo.toString(impactedSystems));
 
         // Rebuild from specified step, if needed
-        if (shouldReprocessSheet(step, sheet)) {
-            Step latest = getLatestMandatoryStep(sheet);
+        Step latest = getLatestMandatoryStep(sheet);
 
+        // Avoid SCORE step?
+        Step scoreStep = Steps.valueOf(Steps.SCORE);
+        if (!merge && latest == scoreStep) {
+            latest = Steps.previous(latest);
+        }
+
+        if ((latest == null) || (compare(latest, step) >= 0)) {
             // The range of steps to re-perform
             SortedSet<Step> stepRange = range(step, latest);
 
@@ -378,24 +402,6 @@ public class Stepping
         }
     }
 
-    //----------------------//
-    // shouldReprocessSheet //
-    //----------------------//
-    /**
-     * Check whether some steps need to be reperformed, starting from
-     * step 'from'.
-     *
-     * @param from the step to rebuild from
-     * @return true if some reprocessing must take place
-     */
-    public static boolean shouldReprocessSheet (Step from,
-                                                Sheet sheet)
-    {
-        Step latest = getLatestMandatoryStep(sheet);
-
-        return (latest == null) || (compare(latest, from) >= 0);
-    }
-
     //----------------//
     // doOneScoreStep //
     //----------------//
@@ -408,7 +414,7 @@ public class Stepping
      * @throws StepException
      */
     private static void doOneScoreStep (final Step step,
-                                        Score score)
+                                        final Score score)
             throws StepException
     {
         long startTime = System.currentTimeMillis();
@@ -444,7 +450,7 @@ public class Stepping
                                         final Score score)
     {
         if (score.isMultiPage()) {
-            if (constants.pagesInParallel.getValue()) {
+            if (OmrExecutors.defaultParallelism.getTarget() == true) {
                 // Process all sheets in parallel
                 List<Callable<Void>> tasks = new ArrayList<>();
 
@@ -511,8 +517,8 @@ public class Stepping
                 doOneSheetStep(step, sheet, systems);
             }
         } catch (StepException se) {
-            logger.info("{0}Processing stopped. {1}", new Object[]{sheet.
-                        getLogPrefix(), se.getMessage()});
+            logger.info("{0}Processing stopped. {1}",
+                    sheet.getLogPrefix(), se.getMessage());
         }
     }
 
@@ -601,7 +607,7 @@ public class Stepping
                 doScoreStepSet(single, score);
 
                 if (!score.isMultiPage()
-                        && (score.getFirstPage().getSheet().getScale() == null)) {
+                    && (score.getFirstPage().getSheet().getScale() == null)) {
                     throw new StepException("No scale available");
                 }
             }
@@ -621,11 +627,11 @@ public class Stepping
             // Finally, perform steps that must be done at score level
             // SCORE step if present, must be done first, and in case of failure
             // must prevent the following score-level steps to run.
-            Step mergeStep = Steps.valueOf(Steps.SCORE);
+            Step scoreStep = Steps.valueOf(Steps.SCORE);
 
-            if (stepSet.contains(mergeStep)) {
-                stepSet.remove(mergeStep);
-                doOneScoreStep(mergeStep, score);
+            if (stepSet.contains(scoreStep)) {
+                stepSet.remove(scoreStep);
+                doOneScoreStep(scoreStep, score);
             }
 
             // Perform the other score-level steps, if any
@@ -643,20 +649,5 @@ public class Stepping
 
         long stopTime = System.currentTimeMillis();
         logger.fine("End of step set in {0} ms.", (stopTime - startTime));
-    }
-
-    //~ Inner Classes ----------------------------------------------------------
-    //-----------//
-    // Constants //
-    //-----------//
-    private static final class Constants
-            extends ConstantSet
-    {
-        //~ Instance fields ----------------------------------------------------
-
-        /** Should we apply steps in parallel (vs in sequence) on score pages */
-        Constant.Boolean pagesInParallel = new Constant.Boolean(
-                false,
-                "Should we process score pages in parallel?");
     }
 }

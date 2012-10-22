@@ -11,6 +11,7 @@
 // </editor-fold>
 package omr.step;
 
+import java.awt.image.RenderedImage;
 import omr.log.Logger;
 
 import omr.score.Score;
@@ -21,6 +22,7 @@ import omr.sheet.picture.PictureLoader;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.SortedMap;
 
 /**
  * Class {@code LoadStep} reloads the image for a sheet, 
@@ -49,7 +51,6 @@ public class LoadStep
             Steps.LOAD,
             Level.SHEET_LEVEL,
             Mandatory.MANDATORY,
-            Redoable.REDOABLE,
             Step.PICTURE_TAB,
             "Reload the sheet picture");
     }
@@ -65,9 +66,14 @@ public class LoadStep
         throws StepException
     {
         final Score score = sheet.getScore();
-        final File  imageFile = score.getImageFile();
-        final int   index = sheet.getPage()
-                                 .getIndex();
-        sheet.setImage(PictureLoader.loadImages(imageFile, index).get(index));
+        final File imageFile = score.getImageFile();
+        final int index = sheet.getPage()
+                .getIndex();
+        
+        SortedMap<Integer, RenderedImage> images = 
+                PictureLoader.loadImages(imageFile, index);
+        if (images != null) {
+            sheet.setImage(images.get(index));
+        }
     }
 }

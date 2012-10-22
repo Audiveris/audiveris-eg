@@ -46,6 +46,7 @@ import static omr.ui.symbol.Alignment.*;
 import omr.ui.symbol.MusicFont;
 import omr.ui.util.UIUtilities;
 
+import omr.util.TreeNode;
 import omr.util.VerticalSide;
 
 import java.awt.Color;
@@ -97,6 +98,35 @@ public class PagePhysicalPainter
     }
 
     //~ Methods ----------------------------------------------------------------
+    //---------------//
+    // highlightSlot //
+    //---------------//
+    /**
+     * Highlight a slot with its related chords (stem / notehead)
+     *
+     * @param measure the containing measure
+     * @param slot    the slot to highlight
+     */
+    public void highlightSlot (Measure measure,
+                               Slot slot)
+    {
+        Color oldColor = g.getColor();
+        g.setColor(Colors.SLOT_CURRENT);
+
+        // Draw the slot components
+        for (Chord chord : slot.getChords()) {
+            visit(chord);
+            for (TreeNode tn : chord.getNotes()) {
+                 Note note = (Note) tn;
+                 visit(note);
+            }
+        }
+
+        // Highlight the vertical slot line
+        drawSlot(false, measure, slot, Colors.SLOT_CURRENT);
+        g.setColor(oldColor);
+    }
+
     //----------//
     // drawSlot //
     //----------//
@@ -155,8 +185,7 @@ public class PagePhysicalPainter
                 Rational slotStartTime = slot.getStartTime();
 
                 if (slotStartTime != null) {
-                    paint(
-                            basicLayout(slotStartTime.toString(), halfAT),
+                    paint(basicLayout(slotStartTime.toString(), halfAT),
                             new PixelPoint(x, top - annotationDy),
                             BOTTOM_CENTER);
                 }
@@ -170,7 +199,6 @@ public class PagePhysicalPainter
         g.setStroke(oldStroke);
         g.setColor(oldColor);
     }
-//
 
     //---------------//
     // visit Barline //
@@ -179,7 +207,7 @@ public class PagePhysicalPainter
     public boolean visit (Barline barline)
     {
         if (!barline.getBox().intersects(oldClip)
-                || systemInfo.getSheet().getStaffManager().getStaves().isEmpty()) {
+            || systemInfo.getSheet().getStaffManager().getStaves().isEmpty()) {
             return false;
         }
 
@@ -212,8 +240,12 @@ public class PagePhysicalPainter
             Point2D topCenter = topLine.verticalIntersection(bar);
             Point2D botCenter = botLine.verticalIntersection(bar);
 
+            if (shape != null) {
             BarPainter barPainter = BarPainter.getBarPainter(shape);
             barPainter.draw(g, topCenter, botCenter, part);
+            } else {
+                barline.addError("Barline with no recognized shape");
+            }
 
             // This drawing is driven by the underlying glyphs
 //            for (Glyph glyph : barline.getGlyphs()) {
@@ -329,7 +361,7 @@ public class PagePhysicalPainter
 
                 // Draw slot vertical lines ?
                 if (parameters.isSlotPainting()
-                        && (measure.getSlots() != null)) {
+                    && (measure.getSlots() != null)) {
                     for (Slot slot : measure.getSlots()) {
                         drawSlot(false, measure, slot, Colors.SLOT);
                     }
@@ -529,8 +561,10 @@ public class PagePhysicalPainter
             g.setColor(defaultColor);
 
             // Ledgers
-            for (Glyph ledger : systemInfo.getLedgers()) {
-                ledger.renderLine(g);
+            for (Glyph glyph : systemInfo.getGlyphs()) {
+                if (glyph.getShape() == Shape.LEDGER && glyph.isActive()) {
+                    glyph.renderLine(g);
+                }
             }
 
             // Endings

@@ -46,7 +46,6 @@ public class ScaleStep
             Steps.SCALE,
             Level.SHEET_LEVEL,
             Mandatory.MANDATORY,
-            Redoable.NON_REDOABLE,
             PICTURE_TAB,
             "Compute general scale");
     }
@@ -61,6 +60,7 @@ public class ScaleStep
                       Sheet                  sheet)
         throws StepException
     {
+        sheet.reset(Steps.SCALE);
         sheet.getScaleBuilder()
              .retrieveScale();
     }

@@ -31,7 +31,6 @@ import omr.score.common.PixelPoint;
 import omr.score.common.PixelRectangle;
 
 import omr.sheet.SystemInfo;
-import omr.sheet.picture.Picture;
 
 import omr.stick.SectionRole;
 import omr.stick.StickRelation;
@@ -238,7 +237,7 @@ public class BasicSection
         runs.add(run);
         addRun(run);
 
-        logger.fine("Appended {0} to {1}", new Object[]{run, this});
+        logger.fine("Appended {0} to {1}", run, this);
     }
 
     //-----------//
@@ -299,10 +298,10 @@ public class BasicSection
         // Invalidate cached data
         invalidateCache();
 
-        logger.fine(
-                "Parameters of {0} maxRunLength={1} meanRunLength={2} weight={3}foreWeight={4}",
-                new Object[]{this, getMaxRunLength(), getMeanRunLength(),
-                             weight, foreWeight});
+        logger.fine("Parameters of {0} maxRunLength={1} meanRunLength={2}"
+                + " weight={3} foreWeight={4}",
+                this, getMaxRunLength(), getMeanRunLength(),
+                weight, foreWeight);
     }
 
     //----------//
@@ -346,7 +345,7 @@ public class BasicSection
             // Take only the pixels contained by the oriented roi
             int pos = firstPos - 1;
             int posMax = Math.min(firstPos + runs.size(), oRoi.y + oRoi.height)
-                    - 1;
+                         - 1;
             int coordMax = (oRoi.x + oRoi.width) - 1;
 
             for (Run run : runs) {
@@ -403,7 +402,7 @@ public class BasicSection
             Rectangle oRoi = orientation.oriented(roi);
             final int pMin = oRoi.y;
             final int pMax = -1
-                    + Math.min(
+                             + Math.min(
                     firstPos + runs.size(),
                     oRoi.y + oRoi.height);
             final int cMin = oRoi.x;
@@ -604,7 +603,7 @@ public class BasicSection
             orientedPoint.y /= (2 * getWeight());
 
             centroid = orientation.absolute(orientedPoint);
-            logger.fine("Centroid of {0} is {1}", new Object[]{this, centroid});
+            logger.fine("Centroid of {0} is {1}", this, centroid);
         }
 
         return centroid;
@@ -1100,7 +1099,7 @@ public class BasicSection
     public boolean isKnown ()
     {
         return (glyph != null)
-                && (glyph.isSuccessful() || glyph.isWellKnown());
+               && (glyph.isSuccessful() || glyph.isWellKnown());
     }
 
     //-------------//
@@ -1136,7 +1135,7 @@ public class BasicSection
     @Override
     public void merge (Section other)
     {
-        logger.fine("Merging {0} with {1}", new Object[]{this, other});
+        logger.fine("Merging {0} with {1}", this, other);
 
         runs.addAll(other.getRuns());
         computeParameters();
@@ -1213,7 +1212,7 @@ public class BasicSection
     @Override
     public void prepend (Run run)
     {
-        logger.fine("Prepending {0} to {1}", new Object[]{run, this});
+        logger.fine("Prepending {0} to {1}", run, this);
 
         firstPos--;
         runs.add(0, run);
@@ -1236,7 +1235,7 @@ public class BasicSection
         if (clip.intersects(rect)) {
             // Default section color
             Color color = isVertical() ? Colors.GRID_VERTICAL
-                          : Colors.GRID_HORIZONTAL;
+                    : Colors.GRID_HORIZONTAL;
 
             // Use color defined for section glyph shape, if any
             Glyph glyph = getGlyph();
@@ -1373,7 +1372,7 @@ public class BasicSection
         }
 
         if (isVip()) {
-            logger.info("{0} linkedTo {1}", new Object[]{this, glyph});
+            logger.info("{0} linkedTo {1}", this, glyph);
 
             if (glyph != null) {
                 glyph.setVip();
@@ -1491,25 +1490,6 @@ public class BasicSection
 
         // Force update
         invalidateCache();
-    }
-
-    //-------//
-    // write //
-    //-------//
-    @Override
-    public void write (Picture picture,
-                       int pixel)
-    {
-        Point pt = new Point();
-        pt.y = getFirstPos();
-
-        for (Run run : runs) {
-            for (pt.x = run.getStart(); pt.x <= run.getStop(); pt.x++) {
-                picture.setPixel(orientation.absolute(pt), pixel);
-            }
-
-            pt.y++;
-        }
     }
 
     //----------------//

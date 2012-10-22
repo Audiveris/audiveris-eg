@@ -73,9 +73,7 @@ public class Script
         @XmlElement(name = "insert",
                     type = InsertTask.class),
         @XmlElement(name = "parameters",
-                    type = ParametersTask.class) //        , @XmlElement(name = "midi", type = MidiWriteTask.class)
-        //        , @XmlElement(name = "play", type = PlayTask.class)
-        ,
+                    type = ParametersTask.class),
         @XmlElement(name = "print",
                     type = PrintTask.class),
         @XmlElement(name = "rational",
@@ -182,15 +180,14 @@ public class Script
     //-----//
     /**
      * This methods runs sequentially and synchronously the various
-     * tasks of the script. 
-     * It is up to the caller to run this method in a separate thread if so 
+     * tasks of the script.
+     * It is up to the caller to run this method in a separate thread if so
      * desired.
      */
     public void run ()
     {
         logger.fine("Running {0}{1}",
-                    new Object[]{this, (score != null) ? (" on score " + score.
-                                                          getRadix()) : ""});
+                this, (score != null) ? (" on score " + score.getRadix()) : "");
 
         // Make score concrete (with its pages/sheets)
         if (score == null) {
@@ -207,7 +204,7 @@ public class Script
         // Run the tasks in sequence
         try {
             for (ScriptTask task : tasks) {
-                Page page = null;
+                Page page;
 
                 if (task instanceof SheetTask) {
                     Integer pageIndex = ((SheetTask) task).getPageIndex();
@@ -215,7 +212,7 @@ public class Script
 
                     if (page == null) {
                         logger.warning("Script error. No page for index {0}",
-                                       pageIndex);
+                                pageIndex);
 
                         continue;
                     }
@@ -224,7 +221,7 @@ public class Script
                 }
 
                 Sheet sheet = page.getSheet();
-                logger.fine("Running {0} on {1}", new Object[]{task, sheet});
+                logger.fine("Running {0} on {1}", task, sheet);
 
                 try {
                     // Run the task synchronously (prolog/core/epilog)

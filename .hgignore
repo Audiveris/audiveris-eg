@@ -1,14 +1,15 @@
 # First, use regexp syntax -------------------------------------------------------
 syntax: regexp
+
 \.hgignore$
 \.chg\..*$
 \.conflict\~$
 \.log$
-\.exe$
+audiveris\.exe$
+audiveris-console\.exe$
 \.mf$
 \.mid$
 \.msi$
-\.msm$
 \.orig$
 \.orig\..*$
 \.rej$
@@ -18,20 +19,14 @@ build$
 dist$
 jars$
 midi$
-bin
-ocr-204$
+nbproject/configs$
 pdf$
 print$
 scores$
 scripts$
+settings$
 temp$
 tesseract\.log
-www/docs/api
-
-
-# Now, switch to glob syntax -------------------------------------------------
-syntax: glob
-
 bin
 .DS_Store
 .project
@@ -39,15 +34,21 @@ bin
 manifest.mf
 nbbuild.xml
 .classpath
-audiveris.bat
-manifest.mf
+
+# Now, switch to glob syntax -------------------------------------------------
+syntax: glob
+
 # Ignore .jpg and .pdf under the src directory since they are produced via umlet
 # Images handled by conf management should use other suffix (.png for example)
 src/**/*.jpg
 src/**/*.pdf
 dev/material/*.jpg
+
+audiveris.bat
+manifest.mf
 train/core/*
-ocr/tessdata/*
 eval/backup-neural-network.xml
-settings/run.properties
+www/docs/api
 nbproject/configs
+ocr/tessdata/*
+ocr/tessdata

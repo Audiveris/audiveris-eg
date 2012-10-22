@@ -303,8 +303,8 @@ public class ShapeChecker
         // For debugging only
         if (eval.grade >= 0.1) {
             logger.info("{0}{1} {2} weight:{3} {4} corrected as {5}",
-                        new Object[]{system.getLogPrefix(), glyph, eval, glyph.
-                        getWeight(), glyph.getBounds(), newShape});
+                    system.getLogPrefix(), glyph, eval, glyph.getWeight(),
+                    glyph.getBounds(), newShape);
         }
     }
 
@@ -355,7 +355,6 @@ public class ShapeChecker
         //            };
         new Checker("NotWithinWidth", allPhysicalShapes)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -367,16 +366,16 @@ public class ShapeChecker
                 Shape shape = eval.shape;
 
                 if ((shape == BRACKET)
-                        || (shape == BRACE)
-                        || (shape == TEXT)
-                        || (shape == CHARACTER)) {
+                    || (shape == BRACE)
+                    || (shape == TEXT)
+                    || (shape == CHARACTER)) {
                     return true;
                 }
 
                 PixelRectangle glyphBox = glyph.getBounds();
 
                 if (((glyphBox.x + glyphBox.width) < system.getLeft())
-                        || (glyphBox.x > system.getRight())) {
+                    || (glyphBox.x > system.getRight())) {
                     return false;
                 }
 
@@ -386,7 +385,6 @@ public class ShapeChecker
 
         new Checker("MeasureRest", HW_REST_set)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -413,7 +411,6 @@ public class ShapeChecker
 
         new Checker("NotWithinStaffHeight", Clefs)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -427,7 +424,6 @@ public class ShapeChecker
 
         new Checker("WithinStaffHeight", Dynamics)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -441,7 +437,6 @@ public class ShapeChecker
 
         new Checker("TooFarFromLeftBar", Keys)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -464,11 +459,14 @@ public class ShapeChecker
 
                 Barline insideBar = measure.getInsideBarline();
                 Staff staff = part.getStaffAt(point);
+                if (staff == null) {
+                    return false;
+                }
                 Clef clef = measure.getFirstMeasureClef(staff.getId());
                 int start = (clef != null)
-                            ? (clef.getBox().x + clef.getBox().width)
-                            : ((insideBar != null)
-                               ? insideBar.getLeftX() : measure.getLeftX());
+                        ? (clef.getBox().x + clef.getBox().width)
+                        : ((insideBar != null)
+                        ? insideBar.getLeftX() : measure.getLeftX());
 
                 return (point.x - start) <= maxKeyXOffset;
             }
@@ -476,10 +474,8 @@ public class ShapeChecker
 
         new Checker("CommonCutTime", COMMON_TIME)
         {
-
             private Predicate<Glyph> stemPredicate = new Predicate<Glyph>()
             {
-
                 @Override
                 public boolean check (Glyph entity)
                 {
@@ -512,7 +508,6 @@ public class ShapeChecker
 
         new Checker("Hook", BEAM_HOOK)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -538,7 +533,6 @@ public class ShapeChecker
 
         new Checker("Beams", shapesOf(BEAM, BEAM_2, BEAM_3))
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -569,8 +563,7 @@ public class ShapeChecker
 
                     default:
                         ///logger.warning("Bad beam #" + glyph.getId() + " nb:" + nb);
-                        eval.failure = new Evaluation.Failure(
-                                "beamThickness");
+                        eval.failure = new Evaluation.Failure("beamThickness");
 
                         return false;
                     }
@@ -585,7 +578,6 @@ public class ShapeChecker
                 "noLeftStem",
                 shapesOf(FlagSets, shapesOf(Flags.getShapes())))
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -599,7 +591,6 @@ public class ShapeChecker
         // Shapes that require a stem nearby
         new Checker("noStem", StemSymbols)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -612,7 +603,6 @@ public class ShapeChecker
 
         new Checker("Text", TEXT, CHARACTER)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -621,9 +611,9 @@ public class ShapeChecker
             {
                 // Check reasonable height (Cannot be too tall when close to staff)
                 double maxHeight = (Math.abs(glyph.getPitchPosition()) >= constants.minTitlePitchPosition.
-                                    getValue())
-                                   ? constants.maxTitleHeight.getValue()
-                                   : constants.maxLyricsHeight.getValue();
+                        getValue())
+                        ? constants.maxTitleHeight.getValue()
+                        : constants.maxLyricsHeight.getValue();
 
                 if (glyph.getNormalizedHeight() >= maxHeight) {
                     eval.failure = new Evaluation.Failure("tooHigh");
@@ -689,7 +679,6 @@ public class ShapeChecker
 
         new Checker("FullTimeSig", FullTimes)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -719,7 +708,6 @@ public class ShapeChecker
 
         new Checker("PartialTimeSig", TIME_69_set, PartialTimes)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -741,10 +729,9 @@ public class ShapeChecker
         };
 
         new Checker("StaffGap", Notes.getShapes(), NoteHeads.getShapes(),
-                    Rests.getShapes(), Dynamics.getShapes(),
-                    Articulations.getShapes())
+                Rests.getShapes(), Dynamics.getShapes(),
+                Articulations.getShapes())
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -754,6 +741,12 @@ public class ShapeChecker
                 // A note / rest / dynamic cannot be too far from a staff
                 PixelPoint center = glyph.getAreaCenter();
                 StaffInfo staff = system.getStaffAt(center);
+
+                // Staff may be null when we are modifying system boundaries
+                if (staff == null) {
+                    return false;
+                }
+
                 int gap = staff.getGapTo(glyph);
                 int maxGap = system.getScoreSystem().getScale().toPixels(
                         constants.maxGapToStaff);
@@ -762,12 +755,11 @@ public class ShapeChecker
         };
 
         stemChecker = new Checker("StaffStemGap",
-                                  shapesOf(shapesOf(STEM),
-                                           shapesOf(Beams.getShapes(),
-                                                    Flags.getShapes(),
-                                                    FlagSets)))
+                shapesOf(shapesOf(STEM),
+                shapesOf(Beams.getShapes(),
+                Flags.getShapes(),
+                FlagSets)))
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -786,7 +778,6 @@ public class ShapeChecker
 
         new Checker("SmallDynamics", SmallDynamics)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -801,7 +792,6 @@ public class ShapeChecker
 
         new Checker("MediumDynamics", MediumDynamics)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -816,7 +806,6 @@ public class ShapeChecker
 
         new Checker("TallDynamics", TallDynamics)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -831,7 +820,6 @@ public class ShapeChecker
 
         new Checker("BelowStaff", Pedals)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -845,7 +833,6 @@ public class ShapeChecker
 
         new Checker("Tuplet", Tuplets)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -917,7 +904,6 @@ public class ShapeChecker
 
         new Checker("LongRest", LONG_REST)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -937,7 +923,6 @@ public class ShapeChecker
 
         new Checker("Breve", BREVE_REST)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -957,7 +942,6 @@ public class ShapeChecker
 
         new Checker("Braces", BRACE, BRACKET)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -985,7 +969,7 @@ public class ShapeChecker
                         int intervalBottom = staff.getFirstLine().yAt(box.x);
 
                         if ((intervalTop >= box.y)
-                                && (intervalBottom <= (box.y + box.height))) {
+                            && (intervalBottom <= (box.y + box.height))) {
                             embraced = true; // Ok for this one
 
                             break;
@@ -1008,7 +992,6 @@ public class ShapeChecker
 
         new Checker("WholeSansLedgers", WHOLE_NOTE)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1025,15 +1008,12 @@ public class ShapeChecker
                     return true;
                 }
 
-                Ledger ledger = staff.getClosestLedger(point);
-
-                return ledger != null;
+                return staff.getClosestLedger(point) != null;
             }
         };
 
         new Checker("SystemTop", DAL_SEGNO, DA_CAPO, SEGNO, CODA, BREATH_MARK)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1056,7 +1036,6 @@ public class ShapeChecker
 
         new Checker("Fermata_set", FERMATA_set)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1077,7 +1056,6 @@ public class ShapeChecker
 
         new Checker("FLAG_*_set", FlagSets)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1123,7 +1101,6 @@ public class ShapeChecker
 
         new Checker("TIME_69_set", TIME_69_set)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1142,7 +1119,6 @@ public class ShapeChecker
 
         new Checker("TURN_set", TURN_set)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1172,7 +1148,6 @@ public class ShapeChecker
 
         new Checker("Wedge_set", WEDGE_set)
         {
-
             @Override
             public boolean check (SystemInfo system,
                                   Evaluation eval,
@@ -1270,7 +1245,7 @@ public class ShapeChecker
          *
          * @param system   the containing system
          * @param eval     the partially-filled evaluation (eval.shape is an
-         * input/output, eval.grade and eval.failure are outputs)
+         *                 input/output, eval.grade and eval.failure are outputs)
          * @param glyph    the glyph at hand
          * @param features the glyph features
          * @return true if OK, false otherwise
@@ -1371,5 +1346,6 @@ public class ShapeChecker
         Scale.Fraction maxStemGapToStaff = new Scale.Fraction(
                 12,
                 "Maximum vertical gap between a stem and closest staff");
+
     }
 }

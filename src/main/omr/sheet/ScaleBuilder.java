@@ -24,15 +24,18 @@ import omr.math.Histogram.MaxEntry;
 import omr.math.Histogram.PeakEntry;
 
 import omr.run.Orientation;
-import omr.run.RunsRetriever;
+import omr.run.Run;
+import omr.run.RunsTable;
+import omr.run.RunsTableFactory;
 
 import omr.score.Score;
-import omr.score.common.PixelRectangle;
 
 import omr.sheet.picture.Picture;
 import omr.sheet.ui.SheetsController;
 
 import omr.step.StepException;
+
+import omr.util.StopWatch;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
@@ -47,6 +50,8 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
+import omr.run.PixelFilter;
+import omr.run.FilterDescriptor;
 
 /**
  * Class {@code ScaleBuilder} encapsulates the computation of a sheet
@@ -93,8 +98,9 @@ public class ScaleBuilder
     private static final Logger logger = Logger.getLogger(ScaleBuilder.class);
 
     //~ Instance fields --------------------------------------------------------
-    /** Adapter for reading runs */
-    private Adapter adapter;
+    //
+    /** Keeper of run length histograms, for foreground & background */
+    private HistoKeeper histoKeeper;
 
     /** Related sheet */
     private Sheet sheet;
@@ -152,8 +158,8 @@ public class ScaleBuilder
      */
     public void displayChart ()
     {
-        if (adapter != null) {
-            adapter.writePlot();
+        if (histoKeeper != null) {
+            histoKeeper.writePlot();
         } else {
             logger.warning("No scale data available");
         }
@@ -174,15 +180,34 @@ public class ScaleBuilder
             throws StepException
     {
         Picture picture = sheet.getPicture();
-        adapter = new Adapter(picture.getHeight() - 1);
+        histoKeeper = new HistoKeeper(picture.getHeight() - 1);
 
-        // Read the picture runs and retrieve the key run peaks
-        RunsRetriever runsBuilder = new RunsRetriever(
+        // Binarization: Retrieve the whole table of foreground runs
+
+        FilterDescriptor desc = sheet.getPage().getFilterParam().getTarget();
+        logger.info("{0}{1} {2}", sheet.getLogPrefix(), "Binarization", desc);
+        sheet.getPage().getFilterParam().setActual(desc);
+        StopWatch watch = new StopWatch("Binarization "
+                                        + sheet.getPage().getId() + " " + desc);
+        watch.start("Vertical runs");
+
+        RunsTableFactory factory = new RunsTableFactory(
                 Orientation.VERTICAL,
-                adapter);
-        runsBuilder.
-                retrieveRuns(
-                new PixelRectangle(0, 0, picture.getWidth(), picture.getHeight()));
+                desc.getFilter(picture),
+                0);
+        RunsTable wholeVertTable = factory.createTable("whole");
+        sheet.setWholeVerticalTable(wholeVertTable);
+        factory = null;
+
+        if (constants.printWatch.isSet()) {
+            watch.print();
+        }
+
+        // Build the two histograms
+        histoKeeper.buildHistograms(
+                wholeVertTable,
+                picture.getWidth(),
+                picture.getHeight());
 
         // Retrieve the various histograms peaks
         retrievePeaks();
@@ -193,14 +218,14 @@ public class ScaleBuilder
         // Check we have acceptable resolution.  If not, throw StepException
         checkResolution();
 
-        // Here, we keep going on scale data
+        // Here, we keep going on with scale data
         scale = new Scale(
                 computeLine(),
                 computeInterline(),
                 computeBeam(),
                 computeSecondInterline());
 
-        logger.info("{0}{1}", new Object[]{sheet.getLogPrefix(), scale});
+        logger.info("{0}{1}", sheet.getLogPrefix(), scale);
 
         sheet.getBench().recordScale(scale);
 
@@ -275,7 +300,8 @@ public class ScaleBuilder
             return beamEntry.getKey();
         } else {
             if (backPeak != null) {
-                logger.info("No beam peak found, computing a default value");
+                logger.info("{0}{1}", sheet.getLogPrefix(),
+                        "No beam peak found, computing a default value");
 
                 return (int) Math.rint(0.7 * backPeak.getKey().best);
             } else {
@@ -396,8 +422,8 @@ public class ScaleBuilder
         }
 
         if ((Main.getGui() == null)
-                || (Main.getGui().displayModelessConfirm(
-                    msg + LINE_SEPARATOR + "OK for discarding this sheet?") == JOptionPane.OK_OPTION)) {
+            || (Main.getGui().displayModelessConfirm(
+                msg + LINE_SEPARATOR + "OK for discarding this sheet?") == JOptionPane.OK_OPTION)) {
             if (score.isMultiPage()) {
                 sheet.remove(false);
                 throw new StepException("Sheet removed");
@@ -421,7 +447,7 @@ public class ScaleBuilder
         backPeak = getPeak(backHisto, backSpreadRatio, 0);
         sb.append(" back:").append(backPeak);
 
-        // Second foreground peak (beam)? 
+        // Second foreground peak (beam)?
         if ((forePeak != null) && (backPeak != null)) {
             // Take first local max for which key (beam thickness) is larger
             // than twice the mean line thickness
@@ -455,131 +481,48 @@ public class ScaleBuilder
     }
 
     //~ Inner Classes ----------------------------------------------------------
-    //---------//
-    // Adapter //          
-    //---------//
+    //
+    //-------------//
+    // HistoKeeper //
+    //-------------//
     /**
-     * This adapter customizes RunsRetriever for our scaling purpose.
-     * It handles the precise foreground and background run lengths retrieves
-     * the various peaks and is able to display a chart on the related
-     * populations if so asked by the user.
-     * 
-     * Major change: convert the adapter to local threshold adapter by ryo/twitter @xiaot_Tag
+     * This class builds the precise foreground and background run
+     * lengths, it retrieves the various peaks and is able to display a
+     * chart on the related populations if so asked by the user.
+     * It first builds the whole table of foreground vertical runs, which will
+     * be reused in following step (GRID).
      */
-    private class Adapter
-            implements RunsRetriever.Adapter
+    private class HistoKeeper
     {
         //~ Instance fields ----------------------------------------------------
-
-        private final Picture picture;
 
         private final int[] fore; // (black) foreground runs
 
         private final int[] back; // (white) background runs
-        
-        @Deprecated
-        private int maxForeground; // Threshold black / white
 
         //~ Constructors -------------------------------------------------------
-        //---------//
-        // Adapter //
-        //---------//
-        public Adapter (int hMax)
+        //
+        //-------------//
+        // HistoKeeper //
+        //-------------//
+        /**
+         * Create an instance of histoKeeper.
+         *
+         * @param hMax the maximum possible run length
+         */
+        public HistoKeeper (int hMax)
         {
-            picture = sheet.getPicture();
-            picture.computerintegral();
-//            if (picture.getMaxForeground() != -1) {
-//                maxForeground = picture.getMaxForeground();
-//            } else {
-//                maxForeground = sheet.getMaxForeground();
-//            }
-
             // Allocate histogram counters
             fore = new int[hMax + 2];
             back = new int[hMax + 2];
 
-            // Useful? 
+            // Useful?
             Arrays.fill(fore, 0);
             Arrays.fill(back, 0);
         }
 
         //~ Methods ------------------------------------------------------------
-        //---------//
-        // backRun //
-        //---------//
-        @Override
-        public void backRun (int w,
-                             int h,
-                             int length)
-        {
-            back[length]++;
-        }
-
-        //---------//
-        // foreRun //
-        //---------//
-        @Override
-        public void foreRun (int w,
-                             int h,
-                             int length,
-                             int cumul)
-        {
-            fore[length]++;
-        }
-
-        //----------//
-        // getLevel //
-        //----------//
-        @Override
-        public int getLevel (int coord,
-                             int pos)
-        {
-            // Swap pos & coord since we work on vertical runs
-            return picture.getPixel(pos, coord);
-        }
-
-        //--------//
-        // isFore //
-        //--------//
-    	/**
-    	 * @deprecated
-    	 */
-        @Override
-        public boolean isFore (int level)
-        {
-            // Assuming black=0, white=255
-            return level <= maxForeground;
-        }
-        
-    	@Override
-    	public boolean isForelocaltres(int y, int x) {
-    		double var = 0, mean = 0, sqmean = 0;
-    		mean = picture.getMean(x, y, WINDOWSIZE);
-    		sqmean = picture.getSqrMean(x, y, WINDOWSIZE);
-    		var = Math.abs(sqmean - mean * mean);
-    		int originPixValue = getLevel(y, x);
-    		double threshold = 255 - (255 - mean)
-    				* (1 + K * (Math.sqrt(var) / 128 - 1));
-    		boolean isFore = originPixValue < threshold;
-    		return isFore;
-    	}
-
-        //-----------//
-        // terminate //
-        //-----------//
-        @Override
-        public void terminate ()
-        {
-            if (logger.isFineEnabled()) {
-                logger.fine("fore values: {0}", Arrays.toString(fore));
-                logger.fine("back values: {0}", Arrays.toString(back));
-            }
-
-            // Create foreground & background histograms
-            foreHisto = createHistogram(fore);
-            backHisto = createHistogram(back);
-        }
-
+        //
         //-----------//
         // writePlot //
         //-----------//
@@ -621,6 +564,49 @@ public class ScaleBuilder
             return histo;
         }
 
+        //-----------------//
+        // buildHistograms //
+        //-----------------//
+        private void buildHistograms (RunsTable wholeVertTable,
+                                      int width,
+                                      int height)
+        {
+            for (int x = 0; x < width; x++) {
+                List<Run> runSeq = wholeVertTable.getSequence(x);
+                // Ordinate of first pixel not yet processed
+                int yLast = 0;
+
+                for (Run run : runSeq) {
+                    int y = run.getStart();
+
+                    if (y > yLast) {
+                        // Process the background run before this run
+                        int backLength = y - yLast;
+                        back[backLength]++;
+                    }
+
+                    // Process this foreground run
+                    int foreLength = run.getLength();
+                    fore[foreLength]++;
+                    yLast = y + foreLength;
+                }
+
+                // Process a last background run, if any
+                if (yLast < height) {
+                    int backLength = height - yLast;
+                    back[backLength]++;
+                }
+            }
+
+            if (logger.isFineEnabled()) {
+                logger.fine("fore values: {0}", Arrays.toString(fore));
+                logger.fine("back values: {0}", Arrays.toString(back));
+            }
+
+            // Create foreground & background histograms
+            foreHisto = createHistogram(fore);
+            backHisto = createHistogram(back);
+        }
     }
 
     //-----------//
@@ -655,6 +641,11 @@ public class ScaleBuilder
         final Constant.Ratio minBeamLineRatio = new Constant.Ratio(
                 2.0,
                 "Minimum ratio between beam thickness and line thickness");
+
+        final Constant.Boolean printWatch = new Constant.Boolean(
+                false,
+                "Should we print the StopWatch on binarization?");
+
     }
 
     //---------//

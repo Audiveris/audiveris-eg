@@ -13,8 +13,6 @@ package omr.step;
 
 import omr.log.Logger;
 
-import omr.score.Score;
-
 import omr.sheet.Sheet;
 import omr.sheet.SystemInfo;
 
@@ -44,9 +42,6 @@ public abstract class AbstractStep
     /** Is the step mandatory? */
     protected final Mandatory mandatory;
 
-    /** Is the step repeatable at will? */
-    protected final Redoable redoable;
-
     /** Related short label */
     protected final String label;
 
@@ -61,21 +56,18 @@ public abstract class AbstractStep
      * @param name        the step name
      * @param level       score level only or sheet level
      * @param mandatory   step must be done before any output
-     * @param redoable    step can be redone at will
      * @param label       The title of the related (or most relevant) view tab
      * @param description A step description for the end user
      */
     public AbstractStep (String name,
                          Level level,
                          Mandatory mandatory,
-                         Redoable redoable,
                          String label,
                          String description)
     {
         this.name = name;
         this.level = level;
         this.mandatory = mandatory;
-        this.redoable = redoable;
         this.label = label;
         this.description = description;
     }
@@ -169,15 +161,6 @@ public abstract class AbstractStep
         return mandatory == Step.Mandatory.MANDATORY;
     }
 
-    //------------//
-    // isRedoable //
-    //------------//
-    @Override
-    public boolean isRedoable ()
-    {
-        return redoable == Step.Redoable.REDOABLE;
-    }
-
     //--------------//
     // isScoreLevel //
     //--------------//
@@ -211,8 +194,6 @@ public abstract class AbstractStep
                 .append(level);
         sb.append(" ")
                 .append(mandatory);
-        sb.append(" ")
-                .append(redoable);
         sb.append(" label:")
                 .append(label);
         sb.append("}");

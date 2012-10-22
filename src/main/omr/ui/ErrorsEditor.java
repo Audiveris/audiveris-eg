@@ -41,6 +41,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import omr.step.Steps;
 
 /**
  * Class {@code ErrorsEditor} handles the set of error messages
@@ -88,7 +89,7 @@ public class ErrorsEditor
     public ErrorsEditor (Sheet sheet)
     {
         this.sheet = sheet;
-        list = new JList<Record>(model);
+        list = new JList<>(model);
         scrollPane = new JScrollPane(list);
         list.addListSelectionListener(listener);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -125,12 +126,12 @@ public class ErrorsEditor
                           final Glyph glyph,
                           final String text)
     {
-        final Step step = getCurrentStep(node);
+        final Step step = getCurrentStep();
+
         SwingUtilities.invokeLater(
                 new Runnable()
                 {
                     // This part is run on swing thread
-
                     @Override
                     public void run ()
                     {
@@ -158,7 +159,6 @@ public class ErrorsEditor
                 new Runnable()
                 {
                     // This part is run on swing thread
-
                     @Override
                     public void run ()
                     {
@@ -182,7 +182,6 @@ public class ErrorsEditor
                 new Runnable()
                 {
                     // This part is run on swing thread
-
                     @Override
                     public void run ()
                     {
@@ -223,7 +222,6 @@ public class ErrorsEditor
                 new Runnable()
                 {
                     // This part is run on swing thread
-
                     @Override
                     public void run ()
                     {
@@ -232,7 +230,7 @@ public class ErrorsEditor
                             Record record = it.next();
 
                             if ((record.step == step)
-                                    && (record.node.getSystem().getId() == systemId)) {
+                                && (record.node.getSystem().getId() == systemId)) {
                                 it.remove();
                             }
                         }
@@ -264,15 +262,22 @@ public class ErrorsEditor
     // getCurrentStep //
     //----------------//
     /**
-     * Retrieve the step being performed on the system the provided node
-     * belongs to.
+     * Retrieve the step being performed on the sheet.
+     * Beware, during SCORE step and following stepq, just the first sheet
+     * has a current step assigned.
      *
-     * @param node the SystemNode the error relates to
      * @return the step being done
      */
-    private Step getCurrentStep (SystemNode node)
+    private Step getCurrentStep ()
     {
-        return sheet.getCurrentStep();
+        Step step = sheet.getCurrentStep();
+
+        if (step == null) {
+            ///step = sheet.getScore().getFirstPage().getSheet().getCurrentStep();
+            step = Steps.valueOf(Steps.SCORE);
+        }
+
+        return step;
     }
 
     //~ Inner Classes ----------------------------------------------------------
@@ -325,7 +330,9 @@ public class ErrorsEditor
                 sb.append(" [").append(glyph.idString()).append("]");
             }
 
-            sb.append(" ").append(step);
+            if (step != null) {
+                sb.append(" ").append(step);
+            }
 
             sb.append(" ").append(text);
 

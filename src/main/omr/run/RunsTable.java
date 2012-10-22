@@ -11,8 +11,6 @@
 // </editor-fold>
 package omr.run;
 
-import omr.lag.PixelSource;
-
 import omr.log.Logger;
 
 import omr.score.common.PixelPoint;
@@ -37,7 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Class {@code RunsTable} handles a rectangular assembly of oriented runs
+ * Class {@code RunsTable} handles a rectangular assembly of oriented
+ * runs.
  *
  * @author Hervé Bitteur
  */
@@ -84,7 +83,7 @@ public class RunsTable
      * @param name        name for debugging
      * @param orientation orientation of each run
      * @param dimension   absolute dimensions of the table (width is horizontal,
-     * height is vertical)
+     *                    height is vertical)
      */
     public RunsTable (String name,
                       Orientation orientation,
@@ -93,6 +92,7 @@ public class RunsTable
         this.name = name;
         this.orientation = orientation;
         this.dimension = dimension;
+
 
         runService = new SelectionService(name, eventsWritten);
 
@@ -109,30 +109,29 @@ public class RunsTable
     }
 
     //~ Methods ----------------------------------------------------------------
-    //-------//
-    // clone //
-    //-------//
+    //------//
+    // copy //
+    //------//
     /**
      * Make a copy of the table, but sharing the run instances
      *
      * @return another table on the same run instances
      */
-    @Override
-    public RunsTable clone ()
+    public RunsTable copy ()
     {
-        return clone(name);
+        return copy(name + "(copy)");
     }
 
     //-------//
-    // clone //
+    // copy //
     //-------//
     /**
      * Make a copy of the table, but sharing the run instances
      *
-     * @param name a new name for the clone
+     * @param name a new name for the copy
      * @return another table on the same run instances
      */
-    public RunsTable clone (String name)
+    public RunsTable copy (String name)
     {
         RunsTable clone = new RunsTable(name, orientation, dimension);
 
@@ -349,15 +348,6 @@ public class RunsTable
         return dimension.height;
     }
 
-    //------------------//
-    // getMaxForeground //
-    //------------------//
-    @Override
-    public int getMaxForeground ()
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
     //---------//
     // getName //
     //---------//
@@ -487,8 +477,8 @@ public class RunsTable
         }
 
         if ((this.orientation == that.orientation)
-                && this.dimension.equals(that.dimension)
-                && this.name.equals(that.name)) {
+            && this.dimension.equals(that.dimension)
+            && this.name.equals(that.name)) {
             // Check runs
             for (int row = 0; row < getSize(); row++) {
                 List<Run> thisSeq = getSequence(row);
@@ -561,7 +551,7 @@ public class RunsTable
                 return;
             }
 
-            logger.fine("RunsTable {0}: {1}", new Object[]{name, locationEvent});
+            logger.fine("RunsTable {0}: {1}", name, locationEvent);
 
             if (locationEvent instanceof LocationEvent) {
                 // Location => Run
@@ -662,13 +652,14 @@ public class RunsTable
         }
     }
 
-    //------------------//
-    // setMaxForeground //
-    //------------------//
-    @Override
-    public void setMaxForeground (int level)
+    //--------------------//
+    // cutLocationService //
+    //--------------------//
+    public void cutLocationService (SelectionService locationService)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        for (Class<?> eventClass : eventsRead) {
+            locationService.unsubscribe(eventClass, this);
+        }
     }
 
     //----------//
@@ -686,6 +677,15 @@ public class RunsTable
 
         sb.append(" ").append(dimension.width).append("x").append(
                 dimension.height);
+
+        // Debug
+        if (false) {
+            int count = 0;
+            for (List<Run> seq : runs) {
+                count += seq.size();
+            }
+            sb.append(" count:").append(count);
+        }
 
         sb.append("}");
 
@@ -712,7 +712,7 @@ public class RunsTable
         MouseMovement movement = locationEvent.movement;
 
         if ((hint != SelectionHint.LOCATION_ADD)
-                && (hint != SelectionHint.LOCATION_INIT)) {
+            && (hint != SelectionHint.LOCATION_INIT)) {
             return;
         }
 
@@ -724,14 +724,4 @@ public class RunsTable
             runService.publish(new RunEvent(this, hint, movement, run));
         }
     }
-
-	@Override
-	public double getMean(int x, int y, int windowSize) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public double getSqrMean(int x, int y, int windowSize) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 }

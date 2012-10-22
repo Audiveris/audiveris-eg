@@ -45,6 +45,7 @@ public class DurationRetriever
             DurationRetriever.class);
 
     //~ Instance fields --------------------------------------------------------
+    //
     /** Map of Measure id -> Measure duration, whatever the containing part */
     private final Map<PageBased, Rational> measureDurations = new HashMap<>();
 
@@ -52,6 +53,7 @@ public class DurationRetriever
     private int pass = 1;
 
     //~ Constructors -----------------------------------------------------------
+    //
     //-------------------//
     // DurationRetriever //
     //-------------------//
@@ -63,6 +65,7 @@ public class DurationRetriever
     }
 
     //~ Methods ----------------------------------------------------------------
+    //
     //---------------//
     // visit Measure //
     //---------------//
@@ -70,8 +73,8 @@ public class DurationRetriever
     public boolean visit (Measure measure)
     {
         try {
-            logger.fine("Visiting Part#{0} {1}", new Object[]{measure.getPart().
-                        getId(), measure});
+            logger.fine("Visiting Part#{0} {1}",
+                    measure.getPart().getId(), measure);
 
             Rational measureDur = Rational.ZERO;
 
@@ -98,9 +101,7 @@ public class DurationRetriever
                 }
 
                 measureDurations.put(measure.getPageId(), measureDur);
-
-                logger.fine("{0}: {1}", new Object[]{measure.getPageId(),
-                                                     measureDur});
+                logger.fine("{0}: {1}", measure.getPageId(), measureDur);
             } else if (!measure.getWholeChords().isEmpty()) {
                 if (pass > 1) {
                     Rational dur = measureDurations.get(measure.getPageId());

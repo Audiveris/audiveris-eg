@@ -13,27 +13,19 @@ package omr.sheet.picture;
 
 import omr.log.Logger;
 
-import omr.ui.symbol.TextFont;
-
 import omr.util.FileUtil;
 
-import com.sun.pdfview.PDFFile;
-import com.sun.pdfview.PDFPage;
-import com.sun.pdfview.PDFRenderer;
+import omr.WellKnowns;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -43,16 +35,15 @@ import javax.imageio.stream.ImageInputStream;
 import javax.media.jai.JAI;
 
 /**
- * PictureLoader separates static methods for loading an image from a
- * file from the image processing methods in the Picture class.
+ * Class {@code PictureLoader} gathers helper functions for {@link
+ * Picture} to handle the loading of one or several images out of an
+ * input file.
  *
- * It leverages the JAI, ImageIO, and PDF Renderer libraries.
- *
- * While loading, if possible, empty info strings will be sent to the logger,
- * incrementing the step monitor to show loading progress.
+ * <p>It leverages several software pieces: JAI, ImageIO, and Ghostscript.
  *
  * @author Hervé Bitteur
  * @author Brenton Partridge
+ * @author Maxim Poliakovski
  */
 public class PictureLoader
 {
@@ -70,27 +61,27 @@ public class PictureLoader
     }
 
     //~ Methods ----------------------------------------------------------------
+    //
     //----------//
     // loadFile //
     //----------//
     /**
-     * Loads a sequence of RenderedImage's from a file.
+     * Loads a sequence of RenderedImage instances from a file.
      *
      * If ImageIO can read the file, it is used preferentially.
-     * If not, or ImageIO has an error, PDF Renderer is used for files
+     * If not, or if ImageIO has an error, a PDF loader is used for files
      * ending with ".pdf" and JAI is used for all other files.
      *
      * @param imgFile the image file to load
-     * @param index   if not null, specifies (counted from 1) which single image
+     * @param id      if not null, specifies (counted from 1) which single image
      *                is desired
      * @return a sorted map of RenderedImage's (often but not always a
-     *         BufferedImage), guaranteed not to be null, index counted from 1.
+     *         BufferedImage), guaranteed not to be null, id counted from 1.
      * @throws IllegalArgumentException if file does not exist
-     * @throws RuntimeException         if all libraries are unable to load the
-     *                                  file
+     * @throws RuntimeException         if we are unable to load the file
      */
     public static SortedMap<Integer, RenderedImage> loadImages (File imgFile,
-                                                                Integer index)
+                                                                Integer id)
     {
         if (!imgFile.exists()) {
             throw new IllegalArgumentException(imgFile + " does not exist");
@@ -98,16 +89,15 @@ public class PictureLoader
 
         logger.info("Loading {0} ...", imgFile);
 
-        logger.fine("Using ImageIO");
+        logger.fine("Trying ImageIO");
 
-        SortedMap<Integer, RenderedImage> images = loadImageIO(imgFile, index);
+        SortedMap<Integer, RenderedImage> images = loadImageIO(imgFile, id, null);
 
         if (images == null) {
             String extension = FileUtil.getExtension(imgFile);
 
             if (extension.equalsIgnoreCase(".pdf")) {
-                logger.fine("Using PDF renderer");
-                images = loadPDF(imgFile, index);
+                images = loadPDF(imgFile, id);
             } else {
                 logger.fine("Using JAI");
                 images = loadJAI(imgFile);
@@ -115,8 +105,7 @@ public class PictureLoader
         }
 
         if (images == null) {
-            throw new RuntimeException(
-                    "Unable to load any image from " + imgFile);
+            logger.warning("Unable to load any image from {0}", imgFile);
         }
 
         return images;
@@ -126,16 +115,20 @@ public class PictureLoader
     // loadImageIO //
     //-------------//
     /**
-     * Try to load a sequence of images out of the provided stream
+     * Try to load a sequence of images, using ImageIO.
      *
      * @param imgFile the input image file
-     * @param index   if not null, specifies (counted from 1) which single image
-     *                is desired
+     * @param id      if not null, specifies (counted from 1) which single
+     *                image is desired
+     * @param idUser  if not null, identity used in the returned map
      * @return a map of images, or null if failed to load
      */
     private static SortedMap<Integer, RenderedImage> loadImageIO (File imgFile,
-                                                                  Integer index)
+                                                                  Integer id,
+                                                                  Integer idUser)
     {
+        logger.fine("loadImageIO {0} id:{1}", imgFile, id);
+
         // Input stream
         ImageInputStream stream;
 
@@ -165,25 +158,24 @@ public class PictureLoader
             ImageReader reader = readers.next();
 
             try {
-                ///reader.addIIOReadProgressListener(new Listener());
                 reader.setInput(stream, false);
 
                 int imageCount = reader.getNumImages(true);
 
                 if (imageCount > 1) {
-                    logger.info("{0} contains {1} images", new Object[]{imgFile.
-                                getName(), imageCount});
+                    logger.info("{0} contains {1} images",
+                            imgFile.getName(), imageCount);
                 }
 
                 SortedMap<Integer, RenderedImage> images = new TreeMap<>();
 
                 for (int i = 1; i <= imageCount; i++) {
-                    if ((index == null) || (index == i)) {
+                    if ((id == null) || (id == i)) {
                         BufferedImage img = reader.read(i - 1);
-                        images.put(i, img);
+                        int identity = idUser != null ? idUser : i;
+                        images.put(identity, img);
                         logger.info("Loaded image #{0} ({1} x {2})",
-                                    new Object[]{i, img.getWidth(), img.
-                                    getHeight()});
+                                identity, img.getWidth(), img.getHeight());
                     }
                 }
 
@@ -207,7 +199,9 @@ public class PictureLoader
     // loadJAI //
     //---------//
     /**
-     * Load an image, using JAI
+     * Try to load an image, using JAI.
+     * This seems limited to a single image, thus no id parameter is to be
+     * provided.
      *
      * @param imgFile the input file
      * @return a map of one image, or null if failed to load
@@ -234,94 +228,93 @@ public class PictureLoader
     // loadPDF //
     //---------//
     /**
-     * Load a sequence of images out of a PDF file
+     * Load a sequence of images out of a PDF file.
+     * We spawn a Ghostscript subprocess to convert PDF to TIFF and then
+     * load the temporary TIFF file via loadImageIO().
      *
      * @param imgFile the input PDF file
-     * @param index   if not null, specifies (counted from 1) which single image
+     * @param id      if not null, specifies (counted from 1) which single image
      *                is desired
      * @return a map of images, or null if failed to load
      */
     private static SortedMap<Integer, RenderedImage> loadPDF (File imgFile,
-                                                              Integer index)
+                                                              Integer id)
     {
-        double res = 1.0 / TextFont.TO_POINT;
+        logger.fine("loadPDF {0} id:{1}", imgFile, id);
 
+        // Create a temporary tiff file from the PDF input
+        Path temp = null;
         try {
-            // set up the PDF reading
-            RandomAccessFile raf = new RandomAccessFile(imgFile, "r");
-            FileChannel channel = raf.getChannel();
-            ByteBuffer buf = channel.map(
-                    FileChannel.MapMode.READ_ONLY,
-                    0,
-                    channel.size());
-
-            try {
-                PDFFile pdfFile = new PDFFile(buf);
-
-                // Image count
-                int imageCount = pdfFile.getNumPages();
-
-                if (imageCount > 1) {
-                    logger.info("{0} contains {1} images", new Object[]{imgFile.
-                                getName(), imageCount});
-                }
-
-                SortedMap<Integer, RenderedImage> images = new TreeMap<>();
-
-                for (int i = 1; i <= imageCount; i++) {
-                    if ((index == null) || (index == i)) {
-                        // PDF pages are accessed starting from 1 (vs 0)!!!
-                        PDFPage page = pdfFile.getPage(i);
-
-                        // Get the dimensions
-                        Rectangle2D bbox = page.getBBox();
-                        Rectangle rect = new Rectangle(
-                                0,
-                                0,
-                                (int) (bbox.getWidth() * res),
-                                (int) (bbox.getHeight() * res));
-
-                        // Create and configure a graphics object
-                        BufferedImage img = new BufferedImage(
-                                rect.width,
-                                rect.height,
-                                BufferedImage.TYPE_BYTE_GRAY); // 0..255
-
-                        Graphics2D g2 = img.createGraphics();
-                        // Use antialiasing
-                        g2.setRenderingHint(
-                                RenderingHints.KEY_ANTIALIASING,
-                                RenderingHints.VALUE_ANTIALIAS_ON);
-
-                        // Do the actual drawing
-                        PDFRenderer renderer = new PDFRenderer(
-                                page,
-                                g2,
-                                rect, // bounds into which to fit the page
-                                null, // No clipping
-                                Color.WHITE); // Background color
-                        page.waitForFinish();
-                        renderer.run();
-                        images.put(i, img);
-
-                        logger.info("{0} loaded image #{1} ({2} x {3})",
-                                    imgFile.getName(), i,
-                                    img.getWidth(), img.getHeight());
-                    }
-                }
-
-                return images;
-            } catch (Throwable e) {
-                logger.warning("Unable to render PDF", e);
-
-                return null;
-            } finally {
-                raf.close();
-            }
-        } catch (IOException e) {
-            logger.warning("Unable to load PDF", e);
-
+            temp = Files.createTempFile("pic-", ".tif");
+        } catch (IOException ex) {
+            logger.warning("Cannot create temporary file " + temp, ex);
             return null;
         }
+
+        // Arguments for Ghostscript
+        List<String> gsArgs = new ArrayList<>();
+        gsArgs.add(getGhostscriptExec());
+        gsArgs.add("-dQUIET");
+        gsArgs.add("-dNOPAUSE");
+        gsArgs.add("-dBATCH");
+        gsArgs.add("-dSAFER");
+        gsArgs.add("-sDEVICE=tiffscaled8");
+        gsArgs.add("-r300");
+        gsArgs.add("-sOutputFile=" + temp);
+        if (id != null) {
+            gsArgs.add("-dFirstPage=" + id);
+            gsArgs.add("-dLastPage=" + id);
+        }
+        gsArgs.add(imgFile.toString());
+        logger.fine("gsArgs:{0}", gsArgs);
+
+        try {
+            // Spawn Ghostscript process and wait for its completion
+            new ProcessBuilder(gsArgs).start().waitFor();
+
+            // Now load the temporary tiff file
+            if (id != null) {
+                return loadImageIO(temp.toFile(), 1, id);
+            } else {
+                return loadImageIO(temp.toFile(), null, null);
+            }
+        } catch (IOException | InterruptedException ex) {
+            logger.warning("Error running Ghostscript " + gsArgs, ex);
+            return null;
+        } finally {
+            try {
+                Files.delete(temp);
+            } catch (IOException ex) {
+                logger.warning("Error deleting file " + temp, ex);
+            }
+        }
+    }
+
+    //--------------------//
+    // getGhostscriptExec //
+    //--------------------//
+    /**
+     * Report the path to proper Ghostscript executable
+     * on this machine / environment.
+     *
+     * @return the path to Ghostscript executable
+     */
+    private static String getGhostscriptExec ()
+    {
+        File f;
+
+        if (WellKnowns.LINUX || WellKnowns.MAC_OS_X) {
+            // TODO: certainly modify this line
+            return "gs";
+        } else if (WellKnowns.WINDOWS) {
+            if (WellKnowns.WINDOWS_64) {
+                f = new File(WellKnowns.GS_FOLDER, "windows/x64/gswin64c.exe");
+            } else {
+                f = new File(WellKnowns.GS_FOLDER, "windows/x86/gswin32c.exe");
+            }
+            return f.toString();
+        }
+
+        return null;
     }
 }

@@ -230,7 +230,7 @@ public class FilamentsFactory
             createFilaments(source);
 
             logger.fine("{0} {1} filaments created.",
-                        orientation, filaments.size());
+                    orientation, filaments.size());
 
             // Merge filaments into larger filaments
             watch.start("mergeFilaments");
@@ -435,7 +435,7 @@ public class FilamentsFactory
                 if (logger.isFineEnabled() || areVips) {
                     logger.info(
                             "{0}Gap too long: {1} vs {2}",
-                            new Object[]{vips, coordGap, params.maxCoordGap});
+                            vips, coordGap, params.maxCoordGap);
                 }
 
                 return false;
@@ -447,7 +447,7 @@ public class FilamentsFactory
                 // Determine maximum consistent resulting thickness
                 double maxConsistentThickness = maxConsistentThickness(one);
                 double maxSpace = expanding ? params.maxExpansionSpace
-                                  : params.maxSpace;
+                        : params.maxSpace;
 
                 // Measure thickness at various coord values of overlap
                 // Provided that the overlap is long enough
@@ -455,19 +455,16 @@ public class FilamentsFactory
 
                 for (int iq = 1; iq <= valNb; iq++) {
                     double midCoord = overlapStart
-                            - ((iq * coordGap) / (valNb + 1));
+                                      - ((iq * coordGap) / (valNb + 1));
                     double onePos = one.getPositionAt(midCoord, orientation);
                     double twoPos = two.getPositionAt(midCoord, orientation);
                     double posGap = Math.abs(onePos - twoPos);
 
                     if (posGap > params.maxOverlapDeltaPos) {
                         if (logger.isFineEnabled() || areVips) {
-                            logger.
-                                    info(
+                            logger.info(
                                     "{0}Delta pos too high for overlap: {1} vs {2}",
-                                    new Object[]{
-                                        vips, posGap, params.maxOverlapDeltaPos
-                                    });
+                                    vips, posGap, params.maxOverlapDeltaPos);
                         }
 
                         return false;
@@ -484,10 +481,8 @@ public class FilamentsFactory
                         if (logger.isFineEnabled() || areVips) {
                             logger.info(
                                     "{0}Too thick: {1} vs {2} {3} {4}",
-                                    new Object[]{
-                                        vips, (float) thickness,
-                                        params.maxFilamentThickness, one, two
-                                    });
+                                    vips, (float) thickness,
+                                    params.maxFilamentThickness, one, two);
                         }
 
                         return false;
@@ -495,15 +490,12 @@ public class FilamentsFactory
 
                     // Check thickness consistency
                     if ((-coordGap <= params.maxInvolvingLength)
-                            && (thickness > maxConsistentThickness)) {
+                        && (thickness > maxConsistentThickness)) {
                         if (logger.isFineEnabled() || areVips) {
-                            logger.
-                                    info(
+                            logger.info(
                                     "{0}Non consistent thickness: {1} vs {2} {3} {4}",
-                                    new Object[]{
-                                        vips, (float) thickness,
-                                        (float) maxConsistentThickness, one, two
-                                    });
+                                    vips, (float) thickness,
+                                    (float) maxConsistentThickness, one, two);
                         }
 
                         return false;
@@ -511,16 +503,14 @@ public class FilamentsFactory
 
                     // Check space between overlapped filaments
                     double space = thickness
-                            - (one.getThicknessAt(midCoord, orientation)
-                               + two.getThicknessAt(midCoord, orientation));
+                                   - (one.getThicknessAt(midCoord, orientation)
+                                      + two.getThicknessAt(midCoord, orientation));
 
                     if (space > maxSpace) {
                         if (logger.isFineEnabled() || areVips) {
                             logger.info(
                                     "{0}Space too large: {1} vs {2} {3} {4}",
-                                    new Object[]{
-                                        vips, (float) space, maxSpace, one, two
-                                    });
+                                    vips, (float) space, maxSpace, one, two);
                         }
 
                         return false;
@@ -549,14 +539,13 @@ public class FilamentsFactory
                 int posMargin = (int) Math.rint(
                         Math.max(oneThickness, twoThickness) / 2);
                 double posGap = Math.abs(stop.getY() - start.getY())
-                        - posMargin;
+                                - posMargin;
 
                 if (posGap > params.maxPosGap) {
                     if (logger.isFineEnabled() || areVips) {
                         logger.info(
                                 "{0}Delta pos too high for gap: {1} vs {2}",
-                                new Object[]{vips, (float) posGap,
-                                             params.maxPosGap});
+                                vips, (float) posGap, params.maxPosGap);
                     }
 
                     return false;
@@ -570,10 +559,7 @@ public class FilamentsFactory
                         if (logger.isFineEnabled() || areVips) {
                             logger.info(
                                     "{0}Slope too high for gap: {1} vs {2}",
-                                    new Object[]{
-                                        vips, (float) gapSlope,
-                                        params.maxGapSlope
-                                    });
+                                    vips, (float) gapSlope, params.maxGapSlope);
                         }
 
                         return false;
@@ -642,8 +628,7 @@ public class FilamentsFactory
 
             if (logger.isFineEnabled() || section.isVip() || nest.isVip(fil)) {
                 logger.info(
-                        "Created {0} with {1}",
-                        new Object[]{fil, section});
+                        "Created {0} with {1}", fil, section);
 
                 if (section.isVip() || nest.isVip(fil)) {
                     fil.setVip();
@@ -651,9 +636,7 @@ public class FilamentsFactory
             }
         }
 
-        logger.fine(
-                "createFilaments: {0}/{1}",
-                new Object[]{filaments.size(), source.size()});
+        logger.fine("createFilaments: {0}/{1}", filaments.size(), source.size());
     }
 
     //-----------------//
@@ -678,9 +661,8 @@ public class FilamentsFactory
                 }
             }
 
-            logger.fine(
-                    "expandFilaments: {0}/{1}",
-                    new Object[]{sections.size(), source.size()});
+            logger.fine("expandFilaments: {0}/{1}",
+                    sections.size(), source.size());
 
             Collections.sort(sections, Section.posComparator);
 
@@ -695,9 +677,7 @@ public class FilamentsFactory
                 glyphs.add(glyph);
 
                 if (section.isVip() || nest.isVip(glyph)) {
-                    logger.info(
-                            "VIP created {0} from {1}",
-                            new Object[]{glyph, section});
+                    logger.info("VIP created {0} from {1}", glyph, section);
                     glyph.setVip();
                 }
             }
@@ -728,15 +708,11 @@ public class FilamentsFactory
                             // Check more closely
                             if (canMerge(fil, glyph, true)) {
                                 if (logger.isFineEnabled()
-                                        || fil.isVip()
-                                        || glyph.isVip()) {
-                                    logger.info(
-                                            "Merging {0} w/ {1}",
-                                            new Object[]{
-                                                fil,
-                                                Sections.toString(
-                                                glyph.getMembers())
-                                            });
+                                    || fil.isVip()
+                                    || glyph.isVip()) {
+                                    logger.info("Merging {0} w/ {1}",
+                                            fil,
+                                            Sections.toString(glyph.getMembers()));
 
                                     if (glyph.isVip()) {
                                         fil.setVip();
@@ -751,9 +727,8 @@ public class FilamentsFactory
                             }
                         } else {
                             if (fil.isVip() && glyph.isVip()) {
-                                logger.info(
-                                        "No intersection between {0} and {1}",
-                                        new Object[]{fil, glyph});
+                                logger.info("No intersection between {0} and {1}",
+                                        fil, glyph);
                             }
                         }
                     }
@@ -820,8 +795,8 @@ public class FilamentsFactory
                             // Check for a possible merge
                             if (canMerge(head, candidate, false)) {
                                 if (logger.isFineEnabled()
-                                        || head.isVip()
-                                        || candidate.isVip()) {
+                                    || head.isVip()
+                                    || candidate.isVip()) {
                                     logger.info(
                                             "Merged {0} into {1}",
                                             candidate, head);
@@ -945,6 +920,7 @@ public class FilamentsFactory
         Scale.Fraction maxInvolvingLength = new Scale.Fraction(
                 2,
                 "Maximum filament length to apply thickness test");
+
     }
 
     //------------//

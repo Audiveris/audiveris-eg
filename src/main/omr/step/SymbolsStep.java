@@ -16,6 +16,8 @@ import omr.Main;
 import omr.constant.Constant;
 import omr.constant.ConstantSet;
 
+import omr.glyph.ui.SymbolsEditor;
+
 import omr.log.Logger;
 
 import omr.score.entity.ScoreSystem;
@@ -62,7 +64,6 @@ public class SymbolsStep
                 Steps.SYMBOLS,
                 Level.SHEET_LEVEL,
                 Mandatory.MANDATORY,
-                Redoable.REDOABLE,
                 DATA_TAB,
                 "Apply specific glyph patterns");
     }
@@ -74,7 +75,10 @@ public class SymbolsStep
     @Override
     public void displayUI (Sheet sheet)
     {
-        sheet.getSymbolsEditor().refresh();
+        SymbolsEditor editor = sheet.getSymbolsEditor();
+        if (editor != null) {
+            editor.refresh();
+        }
 
         // Update glyph board if needed (to see OCR'ed data)
         SelectionService service = sheet.getNest().getGlyphService();
@@ -111,8 +115,7 @@ public class SymbolsStep
         // Iterate
         for (int iter = 1; iter <= constants.MaxPatternsIterations.getValue();
                 iter++) {
-            logger.fine("System#{0} patterns iter #{1}",
-                        new Object[]{system.getId(), iter});
+            logger.fine("System#{0} patterns iter #{1}", system.getId(), iter);
 
             if (Main.getGui() != null) {
                 system.getSheet().getErrorsEditor().clearSystem(this, system.
@@ -138,5 +141,6 @@ public class SymbolsStep
                 "count",
                 1,
                 "Maximum number of iterations for PATTERNS task");
+
     }
 }

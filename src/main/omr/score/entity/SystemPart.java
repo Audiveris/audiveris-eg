@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import omr.grid.StaffInfo;
 import omr.sheet.PartInfo;
 
 /**
@@ -67,7 +68,7 @@ public class SystemPart
 
     /** Name, if any, that faces this system part */
     private String name;
-    
+
     /** The related information */
     private final PartInfo info;
 
@@ -112,7 +113,7 @@ public class SystemPart
                        PartInfo info)
     {
         super(system);
-        
+
         this.info = info;
 
         // Allocate specific children
@@ -264,8 +265,7 @@ public class SystemPart
      */
     public SystemPart createDummyPart (int id)
     {
-        logger.fine("{0} createDummyPart for id={1}",
-                    new Object[]{getContextString(), id});
+        logger.fine("{0} createDummyPart for id={1}", getContextString(), id);
 
         // Find some concrete system part for the provided id
         SystemPart nextPart;
@@ -284,7 +284,7 @@ public class SystemPart
                 }
             } else {
                 logger.warning("{0} Cannot find real system part with id {1}",
-                               new Object[]{getContextString(), id});
+                        getContextString(), id);
 
                 return null;
             }
@@ -617,7 +617,13 @@ public class SystemPart
      */
     public Staff getStaffAt (PixelPoint point)
     {
-        Staff staff = getSystem().getInfo().getStaffAt(point).getScoreStaff();
+        // This may fail 
+        StaffInfo staffInfo = getSystem().getInfo().getStaffAt(point);
+        if (staffInfo == null) {
+            return null;
+        }
+        
+        Staff staff = staffInfo.getScoreStaff();
 
         if (staves.getChildren().contains(staff)) {
             return staff;
@@ -921,6 +927,7 @@ public class SystemPart
     //---------//
     /**
      * Report the corresponding info within sheet structure
+     *
      * @return the info
      */
     public PartInfo getInfo ()

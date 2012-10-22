@@ -51,8 +51,6 @@ public class Steps
 
     // Optional step names
     public static final String             PRINT = "PRINT";
-    public static final String             PLAY = "PLAY";
-    public static final String             MIDI = "MIDI";
     public static final String             EXPORT = "EXPORT";
     public static final String             PLUGIN = "PLUGIN";
 
@@ -79,8 +77,6 @@ public class Steps
         // Optional steps, in whatever order
         // ---------------------------------
         addStep(new PrintStep());
-        //        addStep(new PlayStep());
-        //        addStep(new MidiStep());
         addStep(new ExportStep());
 
         // Plugin step depends on default plugin
@@ -193,6 +189,28 @@ public class Steps
         return null;
     }
 
+    //----------//
+    // previous //
+    //----------//
+    /**
+     * Report the step right before the provided one
+     *
+     * @return the preceding step, or null if none
+     */
+    static Step previous (Step step)
+    {
+        Step prev = null;
+
+        for (Step s : steps) {
+            if (s == step) {
+                return prev;
+            }
+            prev = s;
+        }
+
+        return null;
+    }
+
     //-------//
     // range //
     //-------//
@@ -250,22 +268,6 @@ public class Steps
         extends omr.constant.Constant
     {
         //~ Constructors -------------------------------------------------------
-
-        /**
-         * Normal constructor
-         * @param unit         the enclosing unit
-         * @param name         the constant name
-         * @param defaultValue the default Step value
-         * @param description  the semantic of the constant
-         */
-        public Constant (java.lang.String unit,
-                         java.lang.String name,
-                         Step             defaultValue,
-                         java.lang.String description)
-        {
-            super(null, defaultValue.toString(), description);
-            setUnitAndName(unit, name);
-        }
 
         /**
          * Specific constructor, where 'unit' and 'name' are assigned later

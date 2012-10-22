@@ -11,22 +11,24 @@
 // </editor-fold>
 package omr.ui.symbol;
 
-import omr.lag.PixelSource;
-
 import omr.log.Logger;
 
-import java.awt.Color;
+import omr.run.PixelFilter;
+
+import net.jcip.annotations.ThreadSafe;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 
 /**
- * Class {@code SymbolPicture} is an adapter which wraps a ShapeSymbol in
- * order to use it as a source of pixels.
+ * Class {@code SymbolPicture} is an adapter which wraps a ShapeSymbol
+ * in order to use it as a source of pixels.
  *
  * @author Hervé Bitteur
  */
+@ThreadSafe
 public class SymbolPicture
-    implements PixelSource
+        implements PixelFilter
 {
     //~ Static fields/initializers ---------------------------------------------
 
@@ -34,7 +36,6 @@ public class SymbolPicture
     private static final Logger logger = Logger.getLogger(SymbolPicture.class);
 
     //~ Instance fields --------------------------------------------------------
-
     /** Image data buffer */
     private final DataBuffer dataBuffer;
 
@@ -46,26 +47,37 @@ public class SymbolPicture
 
     /**
      * Current max foreground pixel value.
-     * Anything from 0 (black) up to 192 included (light gray) is considered as black
+     * Anything from 0 (black) up to 192 included (light gray) is considered as
+     * black
      * Anything brighter than gray is considered as white (background)
      */
-    private int maxForeground = 216; // Was Color.LIGHT_GRAY.getRed();
+    private final int maxForeground = 216; // Was Color.LIGHT_GRAY.getRed();
 
     //~ Constructors -----------------------------------------------------------
-
     /** Creates a new instance of SymbolPicture
+     *
      * @param image the underlying image
      */
     public SymbolPicture (BufferedImage image)
     {
         dataBuffer = image.getData()
-                          .getDataBuffer();
+                .getDataBuffer();
 
         width = image.getWidth();
         height = image.getHeight();
     }
 
     //~ Methods ----------------------------------------------------------------
+    //
+    // -------//
+    // isFore //
+    // -------//
+    @Override
+    public boolean isFore (int x,
+                           int y)
+    {
+        return getPixel(x, y) <= maxForeground;
+    }
 
     //-----------//
     // getHeight //
@@ -74,15 +86,6 @@ public class SymbolPicture
     public final int getHeight ()
     {
         return height;
-    }
-
-    //------------------//
-    // getMaxForeground //
-    //------------------//
-    @Override
-    public final int getMaxForeground ()
-    {
-        return maxForeground;
     }
 
     //----------//
@@ -110,32 +113,13 @@ public class SymbolPicture
         return width;
     }
 
-    //------------------//
-    // setMaxForeground //
-    //------------------//
+    //------------//
+    // getContext //
+    //------------//
     @Override
-    public void setMaxForeground (int level)
+    public Context getContext (int x,
+                               int y)
     {
-        this.maxForeground = level;
+        return new Context(maxForeground);
     }
-
-    //------------------//
-    // getMean //
-    //------------------//
-    /** could extend {@code AbstractPixelSource if necessary}
-     */
-	@Override
-	public double getMean(int x, int y, int windowSize) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-    //------------------//
-    // getSqrMean //
-    //------------------//
-    /** could extend {@code AbstractPixelSource if necessary}
-     */
-	@Override
-	public double getSqrMean(int x, int y, int windowSize) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 }

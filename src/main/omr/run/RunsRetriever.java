@@ -17,6 +17,7 @@ import omr.score.common.PixelRectangle;
 
 import omr.step.ProcessingCancellationException;
 
+import omr.util.Concurrency;
 import omr.util.OmrExecutors;
 
 import java.awt.Rectangle;
@@ -26,8 +27,9 @@ import java.util.concurrent.Callable;
 
 /**
  * Class {@code RunsRetriever} is in charge of reading a source of pixels
- * and retrieving foreground runs and background runs from it. What is done
- * with the retrieved runs is essentially the purpose of the provided adapter.
+ * and retrieving foreground runs and background runs from it.
+ * What is done with the retrieved runs is essentially the purpose of the
+ * provided adapter.
  *
  * @author Hervé Bitteur
  */
@@ -39,7 +41,7 @@ public class RunsRetriever
     private static final Logger logger = Logger.getLogger(RunsRetriever.class);
 
     //~ Instance fields --------------------------------------------------------
-
+    //
     /** The orientation of desired runs */
     private final Orientation orientation;
 
@@ -47,7 +49,7 @@ public class RunsRetriever
     private final Adapter adapter;
 
     //~ Constructors -----------------------------------------------------------
-
+    //
     //---------------//
     // RunsRetriever //
     //---------------//
@@ -55,27 +57,27 @@ public class RunsRetriever
      * Creates a new RunsRetriever object.
      *
      * @param orientation the desired orientation
-     * @param adapter an adapter to provide pixel access as well as specific
-     * call-back actions when a run (either foreground or background) has just
-     * been read.
+     * @param adapter     an adapter to provide pixel access as well as specific
+     *                    call-back actions when a run (either foreground or
+     *                    background) has just been read.
      */
     public RunsRetriever (Orientation orientation,
-                          Adapter     adapter)
+                          Adapter adapter)
     {
         this.orientation = orientation;
         this.adapter = adapter;
     }
 
     //~ Methods ----------------------------------------------------------------
-
+    //
     //--------------//
     // retrieveRuns //
     //--------------//
     /**
-     * The {@code retrieveRuns} method can be used to build the runs on the
-     * fly, by providing a given absolute rectangle.
+     * The {@code retrieveRuns} method can be used to build the runs on
+     * the fly, by providing a given absolute rectangle.
      *
-     * @param area the ABSOLUTE rectangular area  to explore
+     * @param area the ABSOLUTE rectangular area to explore
      */
     public void retrieveRuns (PixelRectangle area)
     {
@@ -93,8 +95,10 @@ public class RunsRetriever
     // processPosition //
     //-----------------//
     /**
-     * Process the pixels in position 'p' between coordinates 'cMin' & 'cMax'
-     * @param p the position in the pixels array (x for vertical)
+     * Process the pixels in position 'p' between coordinates 'cMin'
+     * and 'cMax'
+     *
+     * @param p    the position in the pixels array (x for vertical)
      * @param cMin the starting coordinate (y for vertical)
      * @param cMax the ending coordinate
      */
@@ -116,7 +120,7 @@ public class RunsRetriever
             final int level = adapter.getLevel(c, p);
 
             ///logger.info("p:" + p + " c:" + c + " level:" + level);
-            if (adapter.isForelocaltres(c, p)) {
+            if (adapter.isFore(c, p)) {
                 // We are on a foreground pixel
                 if (isFore) {
                     // Append to the foreground run in progress
@@ -165,12 +169,13 @@ public class RunsRetriever
      * This method handles the pixels run either in a parallel or a serial way,
      * according to the possibilities of the high OMR executor.
      */
-    private void rowBasedRetrieval (int       pMin,
-                                    int       pMax,
+    private void rowBasedRetrieval (int pMin,
+                                    int pMax,
                                     final int cMin,
                                     final int cMax)
     {
-        if (!OmrExecutors.useParallelism()) {
+        if (OmrExecutors.defaultParallelism.getSpecific() == false
+            || !adapter.isThreadSafe()) {
             // Sequential
             for (int p = pMin; p <= pMax; p++) {
                 processPosition(p, cMin, cMax);
@@ -180,15 +185,16 @@ public class RunsRetriever
             try {
                 // Browse one dimension
                 List<Callable<Void>> tasks = new ArrayList<>(
-                    pMax - pMin + 1);
+                        pMax - pMin + 1);
 
                 for (int p = pMin; p <= pMax; p++) {
                     final int pp = p;
                     tasks.add(
-                        new Callable<Void>() {
-                        @Override
+                            new Callable<Void>()
+                            {
+                                @Override
                                 public Void call ()
-                                    throws Exception
+                                        throws Exception
                                 {
                                     processPosition(pp, cMin, cMax);
 
@@ -199,7 +205,7 @@ public class RunsRetriever
 
                 // Launch the tasks and wait for their completion
                 OmrExecutors.getHighExecutor()
-                            .invokeAll(tasks);
+                        .invokeAll(tasks);
             } catch (InterruptedException ex) {
                 logger.warning("ParallelRuns got interrupted");
                 throw new ProcessingCancellationException(ex);
@@ -213,27 +219,21 @@ public class RunsRetriever
     }
 
     //~ Inner Interfaces -------------------------------------------------------
-
+    //
     //---------//
     // Adapter //
     //---------//
     /**
-     * Interface <code<Adapter</code> is used to plug call-backs to a run
+     * Interface {@code Adapter} is used to plug call-backs to a run
      * retrieval process.
      */
     public static interface Adapter
+            extends Concurrency
     {
-        /** Default value window size */
-        public static final int WINDOWSIZE = 35;
-        
-        /** local threshold K mean */
-        public static final double K = 0.25;
-    	
-    	//~ Methods ------------------------------------------------------------
-
         //---------//
         // backRun //
         //---------//
+
         /**
          * Called at end of a background run, with the related coordinates
          *
@@ -266,8 +266,8 @@ public class RunsRetriever
         // getLevel //
         //----------//
         /**
-         * This method is used to report the gray level of the pixel read at
-         * location (coord, pos).
+         * This method is used to report the gray level of the pixel
+         * read at location (coord, pos).
          *
          * @param coord x for horizontal runs, y for vertical runs
          * @param pos   y for horizontal runs, x for vertical runs
@@ -281,25 +281,22 @@ public class RunsRetriever
         // isFore //
         //--------//
         /**
-         * This method is used to check if the gray level corresponds to a
-         * foreground pixel.
+         * This method is used to check if the pixel at location
+         * (coord, pos) is a foreground pixel.
          *
-         * @param level pixel level of gray
+         * @param coord x for horizontal runs, y for vertical runs
+         * @param pos   y for horizontal runs, x for vertical runs
          *
          * @return true if pixel is foreground, false otherwise
          */
-        @Deprecated
-        boolean isFore (int level);
-        
-        
-        
-        boolean isForelocaltres(int y, int x);
+        boolean isFore (int coord,
+                        int pos);
 
         //-----------//
         // terminate //
         //-----------//
         /**
-         * Called at the very end of run retrieval
+         * Called at the very end of run retrieval.
          */
         void terminate ();
     }

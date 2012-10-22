@@ -11,7 +11,6 @@
 // </editor-fold>
 package omr.score;
 
-import omr.glyph.Glyphs;
 import omr.glyph.Shape;
 import static omr.glyph.ShapeSet.*;
 import omr.glyph.facets.Glyph;
@@ -48,18 +47,16 @@ import omr.score.entity.TimeSignature;
 import omr.score.entity.Tuplet;
 import omr.score.entity.Wedge;
 
-import omr.sheet.Scale;
 import omr.sheet.Sheet;
 import omr.sheet.SystemInfo;
+
+import omr.text.TextLine;
 
 import omr.util.HorizontalSide;
 import omr.util.TreeNode;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import omr.text.TextLine;
 
 /**
  * Class {@code SystemTranslator} performs all translation tasks for
@@ -302,7 +299,7 @@ public class SystemTranslator
             // DOT_set-shape staccato is processed by DotTranslation,
             // while STACCATO-shape staccato is processed here
             return Articulations.contains(shape)
-                    && (shape != Shape.ARPEGGIATO);
+                   && (shape != Shape.ARPEGGIATO);
         }
 
         @Override
@@ -396,8 +393,11 @@ public class SystemTranslator
     private class ChordTranslator
             extends Translator
     {
-        //~ Constructors -------------------------------------------------------
 
+        /** Specific checker for slots in each measure. */
+        SlotChecker slotChecker = new SlotChecker(system);
+
+        //~ Constructors -------------------------------------------------------
         public ChordTranslator ()
         {
             super("Chord");
@@ -407,11 +407,7 @@ public class SystemTranslator
         @Override
         public void browse (Measure measure)
         {
-            // Allocate proper chords in every slot
-            purgeSlots(measure);
-
-            // Check that slots are not too close to each other
-            checkMinSpacing(measure);
+            slotChecker.check(measure);
         }
 
         @Override
@@ -430,100 +426,13 @@ public class SystemTranslator
             Shape shape = glyph.getShape();
 
             return Rests.contains(shape) || NoteHeads.contains(shape)
-                    || Notes.contains(shape);
+                   || Notes.contains(shape);
         }
 
         @Override
         public void translate (Glyph glyph)
         {
-            Score score = system.getScore();
-            Slot.populate(
-                    glyph,
-                    currentMeasure,
-                    score.hasSlotPolicy() ? score.getSlotPolicy()
-                    : Score.getDefaultSlotPolicy());
-        }
-
-        private void checkMinSpacing (Measure measure)
-        {
-            Scale scale = system.getScale();
-            Slot prevSlot = null;
-
-            int minSlotSpacing = scale.toPixels(Page.getMinSlotSpacing());
-            int minSpacing = Integer.MAX_VALUE;
-            Slot minSlot = null;
-
-            for (Slot slot : measure.getSlots()) {
-                if (prevSlot != null) {
-                    int spacing = slot.getX() - prevSlot.getX();
-
-                    if (minSpacing > spacing) {
-                        minSpacing = spacing;
-                        minSlot = slot;
-                    }
-                }
-
-                prevSlot = slot;
-            }
-
-            if (minSpacing < minSlotSpacing) {
-                measure.addError(
-                        minSlot.getLocationGlyph(),
-                        "Suspicious narrow spacing of slots: "
-                        + scale.pixelsToFrac(minSpacing));
-            }
-        }
-
-        private void purgeSlots (Measure measure)
-        {
-            boolean purging;
-
-            do {
-                purging = false;
-
-                // Allocate proper chords in every slot
-                measure.getChords().retainAll(measure.getWholeChords());
-
-                int id = 0;
-
-                for (Slot slot : measure.getSlots()) {
-                    slot.getChords().clear();
-                    slot.setId(++id);
-                    slot.allocateChordsAndNotes();
-                }
-
-                // Check that the same chord is not linked to more than one slot
-                Slot prevSlot = null;
-                Set<Glyph> prevStems = null;
-
-                for (Iterator<Slot> it = measure.getSlots().iterator(); it.
-                        hasNext();) {
-                    Slot slot = it.next();
-
-                    if (prevSlot != null) {
-                        // Look for stem in common
-                        Set<Glyph> stems = slot.getStems();
-                        stems.retainAll(prevStems);
-
-                        if (!stems.isEmpty()) {
-                            logger.fine(
-                                    "{0} merging slots #{1} & #{2} around {3}",
-                                    measure.getContextString(),
-                                    prevSlot.getId(), slot.getId(),
-                                    Glyphs.toString("stems", stems));
-
-                            prevSlot.includeSlot(slot);
-                            it.remove();
-                            purging = true;
-
-                            break;
-                        }
-                    }
-
-                    prevSlot = slot;
-                    prevStems = slot.getStems();
-                }
-            } while (purging);
+            Slot.populate(glyph, currentMeasure);
         }
     }
 
@@ -637,7 +546,7 @@ public class SystemTranslator
             Shape shape = glyph.getShape();
 
             return Dynamics.contains(shape) && (shape != Shape.CRESCENDO)
-                    && (shape != Shape.DECRESCENDO);
+                   && (shape != Shape.DECRESCENDO);
         }
 
         @Override
@@ -668,7 +577,7 @@ public class SystemTranslator
         public boolean isRelevant (Glyph glyph)
         {
             return (glyph.getShape() == Shape.FERMATA)
-                    || (glyph.getShape() == Shape.FERMATA_BELOW);
+                   || (glyph.getShape() == Shape.FERMATA_BELOW);
         }
 
         @Override
@@ -779,7 +688,7 @@ public class SystemTranslator
         public boolean isRelevant (Glyph glyph)
         {
             return (glyph.getShape().isSharpBased())
-                    || (glyph.getShape().isFlatBased());
+                   || (glyph.getShape().isFlatBased());
         }
 
         @Override
@@ -878,8 +787,8 @@ public class SystemTranslator
             final Shape shape = glyph.getShape();
 
             return (shape == Shape.TR) || (shape == Shape.TURN)
-                    || (shape == Shape.MORDENT)
-                    || (shape == Shape.INVERTED_MORDENT);
+                   || (shape == Shape.MORDENT)
+                   || (shape == Shape.INVERTED_MORDENT);
         }
 
         @Override
@@ -909,7 +818,7 @@ public class SystemTranslator
             Shape shape = glyph.getShape();
 
             return (shape == Shape.PEDAL_MARK)
-                    || (shape == Shape.PEDAL_UP_MARK);
+                   || (shape == Shape.PEDAL_UP_MARK);
         }
 
         @Override
@@ -1176,8 +1085,8 @@ public class SystemTranslator
                 Shape shape = glyph.getShape();
 
                 if (glyph.isWellKnown()
-                        && (shape != Shape.CLUTTER)
-                        && !glyph.isTranslated()) {
+                    && (shape != Shape.CLUTTER)
+                    && !glyph.isTranslated()) {
                     // Check for glyph relevance
                     if (isRelevant(glyph)) {
                         // Determine part/staff/measure containment

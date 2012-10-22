@@ -47,6 +47,7 @@ import omr.ui.util.UIUtilities;
 import static omr.util.HorizontalSide.*;
 import omr.util.Predicate;
 import omr.util.StopWatch;
+import omr.util.VipUtil;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -57,7 +58,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * Class {@code LinesRetriever} retrieves the staff lines of a sheet.
@@ -177,7 +177,7 @@ public class LinesRetriever
                 new Dimension(sheet.getWidth(), sheet.getHeight()));
 
         // Remove runs whose height is larger than line thickness
-        RunsTable shortVertTable = wholeVertTable.clone("short-vert").purge(
+        RunsTable shortVertTable = wholeVertTable.copy("short-vert").purge(
                 new Predicate<Run>()
                 {
                     @Override
@@ -197,7 +197,6 @@ public class LinesRetriever
         RunsTable wholeHoriTable = new RunsTableFactory(
                 HORIZONTAL,
                 shortVertTable.getBuffer(),
-                sheet.getPicture().getMaxForeground(),
                 0).createTable("whole-hori");
 
         // To record the purged horizontal runs
@@ -206,7 +205,7 @@ public class LinesRetriever
                 HORIZONTAL,
                 new Dimension(sheet.getWidth(), sheet.getHeight()));
 
-        RunsTable longHoriTable = wholeHoriTable.clone("long-hori").purge(
+        RunsTable longHoriTable = wholeHoriTable.copy("long-hori").purge(
                 new Predicate<Run>()
                 {
                     @Override
@@ -290,7 +289,7 @@ public class LinesRetriever
             includeSections(thinSections, false);
 
             // Update system coordinates
-            for (SystemInfo system : sheet.getSystemManager().getSystems()) {
+            for (SystemInfo system : sheet.getSystems()) {
                 system.updateCoordinates();
             }
         } finally {
@@ -427,7 +426,7 @@ public class LinesRetriever
 
             if (secondInterline != null) {
                 secondFilaments = discardedFilaments;
-                Collections.sort(secondFilaments, Glyph.idComparator);
+                Collections.sort(secondFilaments, Glyph.byId);
                 logger.info("{0}Searching clusters with secondInterline: {1}",
                             sheet.getLogPrefix(), secondInterline);
                 secondClustersRetriever = new ClustersRetriever(
@@ -695,7 +694,7 @@ public class LinesRetriever
         int iMin = 0;
         int iMax = discardedFilaments.size() - 1;
 
-        for (SystemInfo system : sheet.getSystemManager().getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             for (StaffInfo staff : system.getStaves()) {
                 for (LineInfo l : staff.getLines()) {
                     FilamentLine line = (FilamentLine) l;
@@ -763,7 +762,7 @@ public class LinesRetriever
         // Inclusion on the fly would imply recomputation of filament at each
         // section inclusion. So we need to retrieve all "stickers" for a given
         // staff line, and perform a global inclusion at the end only.
-        for (SystemInfo system : sheet.getSystemManager().getSystems()) {
+        for (SystemInfo system : sheet.getSystems()) {
             for (StaffInfo staff : system.getStaves()) {
                 for (LineInfo l : staff.getLines()) {
                     FilamentLine line = (FilamentLine) l;
@@ -1021,7 +1020,8 @@ public class LinesRetriever
                     scale.toPixelsDouble(constants.maxStickerExtension));
 
             // VIPs
-            vipSections = decodeIds(constants.horizontalVipSections.getValue());
+            vipSections = VipUtil.decodeIds(
+                    constants.horizontalVipSections.getValue());
 
             if (logger.isFineEnabled()) {
                 Main.dumping.dump(this);
@@ -1030,25 +1030,6 @@ public class LinesRetriever
             if (!vipSections.isEmpty()) {
                 logger.info("Horizontal VIP sections: {0}", vipSections);
             }
-        }
-
-        //~ Methods ------------------------------------------------------------
-        private List<Integer> decodeIds (String str)
-        {
-            List<Integer> ids = new ArrayList<>();
-
-            // Retrieve the list of ids
-            StringTokenizer st = new StringTokenizer(str, ",");
-
-            while (st.hasMoreTokens()) {
-                try {
-                    ids.add(Integer.decode(st.nextToken().trim()));
-                } catch (Exception ex) {
-                    logger.warning("Illegal id", ex);
-                }
-            }
-
-            return ids;
         }
     }
 }

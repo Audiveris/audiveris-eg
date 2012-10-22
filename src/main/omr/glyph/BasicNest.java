@@ -47,6 +47,8 @@ import omr.selection.UserEvent;
 import omr.sheet.Sheet;
 import omr.sheet.SystemInfo;
 
+import omr.util.VipUtil;
+
 import org.bushe.swing.event.EventSubscriber;
 
 import java.util.ArrayList;
@@ -56,7 +58,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -436,13 +437,11 @@ public class BasicNest
                 // Reuse the existing glyph
                 if (logger.isFineEnabled()) {
                     logger.fine("new avatar of #{0}{1}{2}",
-                                new Object[]{
-                                original.getId(),
-                                Sections.
-                                toString(" members", glyph.getMembers()),
-                                Sections.toString(" original", original.
-                                getMembers())
-                            });
+                            original.getId(),
+                            Sections.
+                            toString(" members", glyph.getMembers()),
+                            Sections.toString(" original", original.
+                            getMembers()));
                 }
 
                 glyph = original;
@@ -469,10 +468,8 @@ public class BasicNest
                     Glyph oldGlyph = originals.remove(oldSig);
 
                     if (oldGlyph != null) {
-                        logger.
-                                fine(
-                                "Updating registration of {0} oldGlyph:{1}",
-                                new Object[]{glyph.idString(), oldGlyph.getId()});
+                        logger.fine("Updating registration of {0} oldGlyph:{1}",
+                                glyph.idString(), oldGlyph.getId());
                     }
                 }
             }
@@ -480,9 +477,8 @@ public class BasicNest
             originals.put(newSig, glyph);
             glyph.setRegisteredSignature(newSig);
 
-            logger.fine(
-                    "Registered {0} as original {1}",
-                    new Object[]{glyph.idString(), glyph.getSignature()});
+            logger.fine("Registered {0} as original {1}",
+                    glyph.idString(), glyph.getSignature());
         }
 
         // Special for virtual glyphs
@@ -519,6 +515,21 @@ public class BasicNest
 
         for (Class<?> eventClass : glyEventsRead) {
             glyphService.subscribeStrongly(eventClass, this);
+        }
+    }
+
+    //-------------//
+    // setServices //
+    //-------------//
+    @Override
+    public void cutServices (SelectionService locationService)
+    {
+        for (Class<?> eventClass : locEventsRead) {
+            locationService.unsubscribe(eventClass, this);
+        }
+
+        for (Class<?> eventClass : glyEventsRead) {
+            glyphService.unsubscribe(eventClass, this);
         }
     }
 
@@ -623,7 +634,7 @@ public class BasicNest
 
             // Publish Glyph
             Glyph glyph = glyphsFound.isEmpty() ? null
-                          : glyphsFound.iterator().next();
+                    : glyphsFound.iterator().next();
             publish(new GlyphEvent(this, hint, movement, glyph));
 
             // Publish GlyphSet
@@ -673,8 +684,8 @@ public class BasicNest
         // In glyph-selection mode, for non-transient glyphs
         // (and only if we have interested subscribers)
         if ((hint != GLYPH_TRANSIENT)
-                && !ViewParameters.getInstance().isSectionSelectionEnabled()
-                && (subscribersCount(GlyphSetEvent.class) > 0)) {
+            && !ViewParameters.getInstance().isSectionSelectionEnabled()
+            && (subscribersCount(GlyphSetEvent.class) > 0)) {
             // Update glyph set
             Set<Glyph> glyphs = getSelectedGlyphSet();
 
@@ -785,6 +796,7 @@ public class BasicNest
         Constant.String vipGlyphs = new Constant.String(
                 "",
                 "(Debug) Comma-separated list of VIP glyphs");
+
     }
 
     //------------//
@@ -802,7 +814,7 @@ public class BasicNest
         //~ Constructors -------------------------------------------------------
         public Parameters ()
         {
-            vipGlyphs = decode(constants.vipGlyphs.getValue());
+            vipGlyphs = VipUtil.decodeIds(constants.vipGlyphs.getValue());
 
             if (logger.isFineEnabled()) {
                 Main.dumping.dump(this);
@@ -811,25 +823,6 @@ public class BasicNest
             if (!vipGlyphs.isEmpty()) {
                 logger.info("VIP glyphs: {0}", vipGlyphs);
             }
-        }
-
-        //~ Methods ------------------------------------------------------------
-        private List<Integer> decode (String str)
-        {
-            List<Integer> ids = new ArrayList<>();
-
-            // Retrieve the list of ids
-            StringTokenizer st = new StringTokenizer(str, ",");
-
-            while (st.hasMoreTokens()) {
-                try {
-                    ids.add(Integer.decode(st.nextToken().trim()));
-                } catch (Exception ex) {
-                    logger.warning("Illegal glyph id", ex);
-                }
-            }
-
-            return ids;
         }
     }
 }

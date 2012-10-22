@@ -57,6 +57,9 @@ import java.util.Set;
  *
  * <p>Nota: Endings and legato signs are currently disabled.
  *
+ * <p>TODO: This class is a monster, without any compelling reason!
+ * Serious simplification is needed.
+ *
  * @author Hervé Bitteur
  */
 public class HorizontalsBuilder
@@ -296,7 +299,7 @@ public class HorizontalsBuilder
 
         for (Section section : allSections) {
             if ((section.getGlyph() == null)
-                    || !section.getGlyph().isWellKnown()) {
+                || !section.getGlyph().isWellKnown()) {
                 keptSections.add(section);
             }
         }
@@ -307,23 +310,22 @@ public class HorizontalsBuilder
     //---------------//
     // staffDistance //
     //---------------//
-    private static double staffDistance (Sheet sheet,
-                                         Glyph stick)
+    private double staffDistance (Glyph stick)
     {
         // Compute the (algebraic) distance from the stick to the nearest
         // staff. Distance is negative if the stick is within the staff,
         // positive outside.
         final Point2D mid = new Point2D.Double(
                 (stick.getStartPoint(HORIZONTAL).getX() + stick.getStopPoint(
-                 HORIZONTAL).getX()) / 2,
+                HORIZONTAL).getX()) / 2,
                 (stick.getStartPoint(HORIZONTAL).getY() + stick.getStopPoint(
-                 HORIZONTAL).getY()) / 2);
-        final StaffInfo staff = sheet.getStaffManager().getStaffAt(mid);
+                HORIZONTAL).getY()) / 2);
+        final StaffInfo staff = system.getStaffAt(mid);
         final double top = staff.getFirstLine().yAt(mid.getX());
         final double bottom = staff.getLastLine().yAt(mid.getX());
         final double dist = Math.max(top - mid.getY(), mid.getY() - bottom);
 
-        return sheet.getScale().pixelsToFrac(dist);
+        return system.getSheet().getScale().pixelsToFrac(dist);
     }
 
     //------------------//
@@ -532,7 +534,12 @@ public class HorizontalsBuilder
     //----------//
     private void feedback ()
     {
-        int nl = system.getLedgers().size();
+        int nl = 0;
+        for (Glyph glyph : system.getGlyphs()) {
+            if (glyph.getShape() == Shape.LEDGER) {
+                nl++;
+            }
+        }
         int nt = tenutos.size();
         int ne = endings.size();
 
@@ -567,7 +574,7 @@ public class HorizontalsBuilder
             sb.append("No ending");
         }
 
-        logger.fine("{0}{1}", new Object[]{sheet.getLogPrefix(), sb.toString()});
+        logger.fine("{0}{1}", sheet.getLogPrefix(), sb.toString());
     }
 
     //    //------------------//
@@ -713,7 +720,7 @@ public class HorizontalsBuilder
 
             // Check precise distance
             double dist = Math.abs(index - context.dist);
-            logger.fine("{0} {1}", new Object[]{dist, context});
+            logger.fine("{0} {1}", dist, context);
 
             if (dist > constants.ledgerMarginY.getValue()) {
                 continue;
@@ -723,7 +730,7 @@ public class HorizontalsBuilder
             int prevIndex = (index > 0) ? (index - 1) : (index + 1);
 
             if (prevIndex != 0) {
-                Set<Ledger> prevLedgers = context.staff.getLedgers(prevIndex);
+                Set<Glyph> prevLedgers = context.staff.getLedgers(prevIndex);
 
                 // Check abscissa compatibility
                 if (prevLedgers == null) {
@@ -732,8 +739,8 @@ public class HorizontalsBuilder
 
                 boolean foundPrevious = false;
 
-                for (Ledger ledger : prevLedgers) {
-                    Point mid = ledger.getStick().getAreaCenter();
+                for (Glyph ledger : prevLedgers) {
+                    Point mid = ledger.getAreaCenter();
                     double dx = Math.abs(mid.x - context.mid.getX());
 
                     if (dx <= ledgerMarginX) {
@@ -771,10 +778,10 @@ public class HorizontalsBuilder
 
             // OK!
             Glyph glyph = system.addGlyph(context.stick);
-            Ledger ledger = new Ledger(glyph, context.staff, index);
-            glyph.setTranslation(ledger);
-            context.staff.addLedger(ledger);
+//            Ledger ledger = new Ledger(glyph, context.staff, index);
+//            glyph.setTranslation(ledger);
             glyph.setShape(Shape.LEDGER);
+            context.staff.addLedger(glyph, index);
             found++;
 
             logger.fine("Ledger at {0}", context);
@@ -870,7 +877,7 @@ public class HorizontalsBuilder
         // Constants specified WRT mean line thickness
         // -------------------------------------------
         Scale.LineFraction maxSectionThickness = new Scale.LineFraction(
-                1.75,
+                1.85,
                 "Maximum horizontal section thickness WRT mean line height");
 
         Scale.LineFraction maxFilamentThickness = new Scale.LineFraction(
@@ -1044,6 +1051,7 @@ public class HorizontalsBuilder
                 "slope",
                 1.5,
                 "Maximum slope for checking a ledger candidate");
+
     }
 
     //---------------------//
@@ -1137,111 +1145,6 @@ public class HorizontalsBuilder
         }
     }
 
-    //    //--------//
-    //    // MyView //
-    //    //--------//
-    //    private final class MyView
-    //        extends GlyphLagView
-    //    {
-    //        //~ Instance fields ----------------------------------------------------
-    //
-    //        /** Popup menu related to glyph selection */
-    //        private DashMenu dashMenu;
-    //
-    //        //~ Constructors -------------------------------------------------------
-    //
-    //        public MyView (Lag              lag,
-    //                       Set<Section>     members,
-    //                       GlyphsController controller)
-    //        {
-    //            super(lag, members, constants.displayLedgerLines, controller, null);
-    //            setName("HorizontalsBuilder-View");
-    //            colorizeAllSections();
-    //
-    //            dashMenu = new DashMenu(controller);
-    //
-    //            // (Weakly) listening on LineParameters properties
-    //            LedgerParameters.getInstance()
-    //                            .addPropertyChangeListener(
-    //                new WeakPropertyChangeListener(this));
-    //        }
-    //
-    //        //~ Methods ------------------------------------------------------------
-    //
-    //        //---------------------//
-    //        // colorizeAllSections //
-    //        //---------------------//
-    //        @Override
-    //        public void colorizeAllSections ()
-    //        {
-    //            super.colorizeAllSections();
-    //
-    //            // All checked sticks.
-    //            for (Glyph stick : horizontalsArea.getSticks()) {
-    //                if ((stick.getShape() != Shape.LEDGER) &&
-    //                    (stick.getShape() != Shape.ENDING_HORIZONTAL)) {
-    //                    stick.colorize(this, Color.red);
-    //                }
-    //            }
-    //
-    //            // Use light gray color for past successful entities
-    //            // If relevant to the current lag...
-    //            sheet.colorize(this, Color.lightGray);
-    //        }
-    //
-    //        //-----------------//
-    //        // contextSelected //
-    //        //-----------------//
-    //        @Override
-    //        public void contextSelected (Point         pt,
-    //                                     MouseMovement movement)
-    //        {
-    //            // Retrieve the selected glyphs
-    //            Set<Glyph> glyphs = getLag()
-    //                                    .getSelectedGlyphSet();
-    //
-    //            // To display point information
-    //            if ((glyphs == null) || glyphs.isEmpty()) {
-    //                pointSelected(pt, movement); // This may change glyph selection
-    //                glyphs = getLag()
-    //                             .getSelectedGlyphSet();
-    //            }
-    //
-    //            if ((glyphs != null) && !glyphs.isEmpty()) {
-    //                // Update the popup menu according to selected glyphs
-    //                dashMenu.updateMenu();
-    //
-    //                // Show the popup menu
-    //                dashMenu.getMenu()
-    //                        .getPopupMenu()
-    //                        .show(
-    //                    this,
-    //                    getZoom().scaled(pt.x),
-    //                    getZoom().scaled(pt.y));
-    //            } else {
-    //                // Popup with no glyph selected ?
-    //            }
-    //        }
-    //
-    //        //-------------//
-    //        // renderItems //
-    //        //-------------//
-    //        @Override
-    //        public void renderItems (Graphics2D g)
-    //        {
-    //            // Render all physical info known so far (staff lines)
-    //            sheet.getPage()
-    //                 .accept(new SheetPainter(g, false));
-    //
-    //            // Render the dashes found
-    //            for (Dash dash : allDashes) {
-    //                dash.renderAttachments(g);
-    //                dash.renderContour(g);
-    //            }
-    //
-    //            super.renderItems(g);
-    //        }
-    //    }
     //--------------//
     // GlyphContext //
     //--------------//
@@ -1272,12 +1175,12 @@ public class HorizontalsBuilder
 
             mid = new Point2D.Double(
                     (stick.getStartPoint(HORIZONTAL).getX() + stick.
-                     getStopPoint(
-                     HORIZONTAL).getX()) / 2,
+                    getStopPoint(
+                    HORIZONTAL).getX()) / 2,
                     (stick.getStartPoint(HORIZONTAL).getY() + stick.
-                     getStopPoint(
-                     HORIZONTAL).getY()) / 2);
-            staff = sheet.getStaffManager().getStaffAt(mid);
+                    getStopPoint(
+                    HORIZONTAL).getY()) / 2);
+            staff = system.getStaffAt(mid);
 
             double toTop = scale.pixelsToFrac(
                     staff.getFirstLine().yAt(mid.getX()) - mid.getY());
@@ -1398,7 +1301,7 @@ public class HorizontalsBuilder
         @Override
         protected double getValue (Glyph stick)
         {
-            return staffDistance(sheet, stick);
+            return staffDistance(stick);
         }
     }
 
@@ -1483,7 +1386,7 @@ public class HorizontalsBuilder
         @Override
         protected double getValue (Glyph stick)
         {
-            return staffDistance(sheet, stick);
+            return staffDistance(stick);
         }
     }
 
