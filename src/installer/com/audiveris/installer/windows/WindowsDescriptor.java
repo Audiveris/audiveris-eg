@@ -274,7 +274,7 @@ public class WindowsDescriptor
                 } catch (IOException ex) {
                     // Fallback to posted copy commands
                     Installer.getBundle()
-                            .appendCommand(getCopyCommand(file, dest));
+                            .appendCommand(getCopyCommand(file, target));
                 }
 
                 return CONTINUE;
@@ -382,7 +382,7 @@ public class WindowsDescriptor
                     "/S",
                     "/E:ON",
                     "/C",
-                    " \"" + cmdLine + "\"");
+                    cmdLine);
         } else {
             List<String> output = new ArrayList<String>();
             int res = Utilities.runProcess(
