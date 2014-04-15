@@ -28,7 +28,7 @@
     <resources>
         <!--        <java version="1.7+" java-vm-args="-Xms384m -Xmx384m" href="http://java.sun.com/products/autodl/j2se"/>      -->
         <!-- ???    <java version="1.7+" java-vm-args="-Xms384m -Xmx384m -verbose:class" href="http://javadl.sun.com/webapps/jawsautodl/AutoDL/j2se" />-->
-        <java version="1.7+" java-vm-args="-Xms384m -Xmx384m" href="http://java.sun.com/products/autodl/j2se"/>    
+        <java version="1.7+" java-vm-args="-Xms384m -Xmx384m -Djava.net.preferIPv4Stack=true" href="http://java.sun.com/products/autodl/j2se"/>    
         
         <!-- Logging -->
 <!--        <property name="logback.configurationFile" value="config/logback.xml" />-->
