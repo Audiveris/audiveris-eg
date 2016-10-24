@@ -27,8 +27,9 @@ import omr.text.TextLine;
 
 import omr.util.ClassUtil;
 
-import tesseract.TessBridge.TessBaseAPI.SegmentationMode;
-import static tesseract.TessBridge.*;
+import org.bytedeco.javacpp.tesseract;
+import org.bytedeco.javacpp.tesseract.TessBaseAPI;
+import org.bytedeco.javacpp.tesseract.StringGenericVector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,10 +116,21 @@ public class TesseractOCR
     public Set<String> getLanguages ()
     {
         if (isAvailable()) {
+            TreeSet<String> set = new TreeSet<>();
+            
             try {
-                String[] langs = TessBaseAPI.getInstalledLanguages(
-                        WellKnowns.OCR_FOLDER.getPath());
-                return new TreeSet<>(Arrays.asList(langs));
+                TessBaseAPI api = new TessBaseAPI();
+                
+                if (api.Init(WellKnowns.OCR_FOLDER.toString(), "eng") == 0) {
+                    StringGenericVector languages = new StringGenericVector();
+                    api.GetAvailableLanguagesAsVector(languages);
+                    
+                    while(!languages.empty())
+                        set.add(languages.pop_back().string().getString());
+                } else {
+                    logger.warn("Error in loading Tesseract languages");
+                }
+                return set;
             } catch (Throwable ex) {
                 logger.warn("Error in loading Tesseract languages", ex);
                 throw new UnavailableOcrException();
@@ -208,14 +220,14 @@ public class TesseractOCR
      * @param layoutMode the desired OCR layout mode
      * @return the corresponding Tesseract segmentation mode
      */
-    private SegmentationMode getMode (LayoutMode layoutMode)
+    private int getMode (LayoutMode layoutMode)
     {
         switch (layoutMode) {
         case MULTI_BLOCK:
-            return SegmentationMode.AUTO;
+            return tesseract.PSM_AUTO;
         default:
         case SINGLE_BLOCK:
-            return SegmentationMode.SINGLE_BLOCK;
+            return tesseract.PSM_SINGLE_BLOCK;
         }
     }
 
