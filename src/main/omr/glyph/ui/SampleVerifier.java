@@ -308,7 +308,6 @@ public class SampleVerifier
                 "pref:grow"); // Rows
 
         PanelBuilder builder = new PanelBuilder(layout);
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

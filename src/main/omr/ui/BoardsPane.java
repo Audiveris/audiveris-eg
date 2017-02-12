@@ -299,7 +299,6 @@ public class BoardsPane
         panel.setNoInsets();
 
         PanelBuilder builder = new PanelBuilder(layout, panel);
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

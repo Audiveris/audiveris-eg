@@ -153,7 +153,6 @@ public class CheckBoard<C extends Checkable>
     {
         FormLayout layout = new FormLayout("pref", "pref");
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

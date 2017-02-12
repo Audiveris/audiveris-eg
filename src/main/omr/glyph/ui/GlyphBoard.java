@@ -213,7 +213,6 @@ public class GlyphBoard
         //                { 3, 7, 11 }
         //            });
         builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         defineLayout();
 

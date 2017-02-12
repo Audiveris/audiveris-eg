@@ -69,7 +69,7 @@
 
         <!-- Used for score marshalling -->
         <jar href="lib/proxymusic-3.0.jar"          download="lazy" part="marshalling"/>
-        <package name="com.audiveris.proxymusic.*" recursive="true" part="marshalling" />
+        <package name="org.audiveris.proxymusic.*" recursive="true" part="marshalling" />
         
         <!-- Link to Audiveris bundle installer -->
         <extension href="installer.jnlp" />

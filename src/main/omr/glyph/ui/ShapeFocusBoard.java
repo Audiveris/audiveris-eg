@@ -363,7 +363,6 @@ public class ShapeFocusBoard
                 "pref," + fieldInterline + "," + "pref");
 
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

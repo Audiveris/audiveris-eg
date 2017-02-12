@@ -368,7 +368,6 @@ class SelectionPanel
                 standardWidth);
         PanelBuilder builder = new PanelBuilder(layout, component);
         CellConstraints cst = new CellConstraints();
-        builder.setDefaultDialogBorder();
 
         int r = 1; // ----------------------------
         builder.addSeparator("Selection", cst.xyw(1, r, 7));

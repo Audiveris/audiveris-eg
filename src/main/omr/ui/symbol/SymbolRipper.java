@@ -370,7 +370,6 @@ public class SymbolRipper
                 "45dlu");
 
         PanelBuilder builder = new PanelBuilder(layout, new Panel());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

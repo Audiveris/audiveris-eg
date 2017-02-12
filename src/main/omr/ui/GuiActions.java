@@ -512,8 +512,6 @@ public class GuiActions
             final PanelBuilder builder = new PanelBuilder(layout);
             final CellConstraints cst = new CellConstraints();
 
-            builder.setDefaultDialogBorder();
-
             int iRow = 1;
 
             URI uri = UriUtil.toURI(WellKnowns.RES_URI, "splash.png");

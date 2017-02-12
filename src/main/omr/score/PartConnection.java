@@ -18,9 +18,9 @@ import omr.score.entity.SystemPart;
 
 import omr.util.TreeNode;
 
-import com.audiveris.proxymusic.PartList;
-import com.audiveris.proxymusic.PartName;
-import com.audiveris.proxymusic.ScorePartwise;
+import org.audiveris.proxymusic.PartList;
+import org.audiveris.proxymusic.PartName;
+import org.audiveris.proxymusic.ScorePartwise;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,8 +166,8 @@ public class PartConnection
 
             for (Object obj : partList.getPartGroupOrScorePart()) {
                 // TODO: For the time being, we ignore part-group elements.
-                if (obj instanceof com.audiveris.proxymusic.ScorePart) {
-                    com.audiveris.proxymusic.ScorePart scorePart = (com.audiveris.proxymusic.ScorePart) obj;
+                if (obj instanceof org.audiveris.proxymusic.ScorePart) {
+                    org.audiveris.proxymusic.ScorePart scorePart = (org.audiveris.proxymusic.ScorePart) obj;
                     parts.add(new PMScorePartCandidate(scorePart, page, index));
                 }
             }
@@ -372,7 +372,7 @@ public class PartConnection
      * (produced by the scanning of just one page)</li>
      * <li>as Audiveris {@link omr.score.entity.ScorePart}
      * (when merging Audiveris pages)</li>
-     * <li>as ProxyMusic {@link com.audiveris.proxymusic.ScorePart} instances
+     * <li>as ProxyMusic {@link org.audiveris.proxymusic.ScorePart} instances
      * (used when merging MusicXML files).</li>
      * </ul>
      */
@@ -407,7 +407,7 @@ public class PartConnection
      * instances,
      * regardless whether they are instances of standard Audiveris {@link
      * ScorePart} or instances of ProxyMusic
-     * {@link com.audiveris.proxymusic.ScorePart}.
+     * {@link org.audiveris.proxymusic.ScorePart}.
      */
     public static interface Result
             extends Comparable<Result>
@@ -505,7 +505,7 @@ public class PartConnection
     {
         //~ Instance fields ----------------------------------------------------
 
-        private final com.audiveris.proxymusic.ScorePart scorePart;
+        private final org.audiveris.proxymusic.ScorePart scorePart;
 
         private final ScorePartwise scorePartwise;
 
@@ -515,7 +515,7 @@ public class PartConnection
 
         //~ Constructors -------------------------------------------------------
         public PMScorePartCandidate (
-                com.audiveris.proxymusic.ScorePart scorePart,
+                org.audiveris.proxymusic.ScorePart scorePart,
                 ScorePartwise scorePartwise,
                 int inputIndex)
         {
@@ -532,7 +532,7 @@ public class PartConnection
             // Id is irrelevant for the time being
 
             /** Factory for proxymusic entities */
-            com.audiveris.proxymusic.ObjectFactory factory = new com.audiveris.proxymusic.ObjectFactory();
+            org.audiveris.proxymusic.ObjectFactory factory = new org.audiveris.proxymusic.ObjectFactory();
 
             PMScorePartResult result = new PMScorePartResult(
                     this,
@@ -598,11 +598,11 @@ public class PartConnection
 
                     // Look for Attributes element
                     for (Object obj : firstMeasure.getNoteOrBackupOrForward()) {
-                        if (!(obj instanceof com.audiveris.proxymusic.Attributes)) {
+                        if (!(obj instanceof org.audiveris.proxymusic.Attributes)) {
                             continue;
                         }
 
-                        com.audiveris.proxymusic.Attributes attributes = (com.audiveris.proxymusic.Attributes) obj;
+                        org.audiveris.proxymusic.Attributes attributes = (org.audiveris.proxymusic.Attributes) obj;
                         BigInteger staves = attributes.getStaves();
 
                         if (staves != null) {
@@ -657,14 +657,14 @@ public class PartConnection
 
         private final int staffCount;
 
-        private final com.audiveris.proxymusic.ScorePart scorePart;
+        private final org.audiveris.proxymusic.ScorePart scorePart;
 
         private int id;
 
         //~ Constructors -------------------------------------------------------
         public PMScorePartResult (Candidate candidate,
                                   int staffCount,
-                                  com.audiveris.proxymusic.ScorePart scorePart)
+                                  org.audiveris.proxymusic.ScorePart scorePart)
         {
             super(candidate);
             this.staffCount = staffCount;
@@ -709,7 +709,7 @@ public class PartConnection
         }
 
         @Override
-        public com.audiveris.proxymusic.ScorePart getUnderlyingObject ()
+        public org.audiveris.proxymusic.ScorePart getUnderlyingObject ()
         {
             return scorePart;
         }
@@ -717,7 +717,7 @@ public class PartConnection
         @Override
         public void setAbbreviation (String abbreviation)
         {
-            com.audiveris.proxymusic.ObjectFactory factory = new com.audiveris.proxymusic.ObjectFactory();
+            org.audiveris.proxymusic.ObjectFactory factory = new org.audiveris.proxymusic.ObjectFactory();
             PartName partName = factory.createPartName();
             scorePart.setPartAbbreviation(partName);
             partName.setValue(abbreviation);
@@ -733,8 +733,8 @@ public class PartConnection
         @Override
         public void setName (String name)
         {
-            com.audiveris.proxymusic.ObjectFactory factory = new com.audiveris.proxymusic.ObjectFactory();
-            com.audiveris.proxymusic.PartName partName = factory.createPartName();
+            org.audiveris.proxymusic.ObjectFactory factory = new org.audiveris.proxymusic.ObjectFactory();
+            org.audiveris.proxymusic.PartName partName = factory.createPartName();
             scorePart.setPartName(partName);
             partName.setValue(name);
         }

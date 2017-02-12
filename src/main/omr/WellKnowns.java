@@ -52,14 +52,14 @@ public class WellKnowns
     public static final String COMPANY_ID = ProgramId.COMPANY_ID;
 
     /** Application name: {@value}. */
-    public static final String TOOL_NAME = ProgramId.NAME;
+    public static final String TOOL_NAME = ProgramId.PROGRAM_NAME;
 
     /** Application reference: {@value}. */
-    public static final String TOOL_REF = ProgramId.VERSION + "."
-                                          + ProgramId.REVISION;
+    public static final String TOOL_REF = ProgramId.PROGRAM_VERSION + "."
+                                          + ProgramId.PROGRAM_REVISION;
 
     /** Application build: {@value}. */
-    public static final String TOOL_BUILD = ProgramId.BUILD;
+    public static final String TOOL_BUILD = ProgramId.PROGRAM_BUILD;
 
     /** Specific prefix for application folders: {@value} */
     private static final String TOOL_PREFIX = "/" + COMPANY_ID + "/"
