@@ -416,7 +416,6 @@ public class ScoreParameters
             FormLayout layout = Panel.makeFormLayout(logicalRowCount, 3,
                     "right:", "30dlu", "35dlu");
             PanelBuilder builder = new PanelBuilder(layout, this);
-            builder.setDefaultDialogBorder();
 
             CellConstraints cst = new CellConstraints();
             int r = 1;

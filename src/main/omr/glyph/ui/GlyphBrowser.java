@@ -247,7 +247,6 @@ class GlyphBrowser
         FormLayout layout = new FormLayout("pref", "pref,pref,pref");
         PanelBuilder builder = new PanelBuilder(layout);
         CellConstraints cst = new CellConstraints();
-        builder.setDefaultDialogBorder();
 
         builder.add(navigator.getComponent(), cst.xy(1, 1));
         builder.add(glyphBoard.getComponent(), cst.xy(1, 2));
@@ -879,7 +878,6 @@ class GlyphBrowser
             CellConstraints cst = new CellConstraints();
             FormLayout layout = Panel.makeFormLayout(4, 3);
             PanelBuilder builder = new PanelBuilder(layout, super.getBody());
-            builder.setDefaultDialogBorder();
 
             int r = 1; // --------------------------------
             builder.add(load, cst.xy(11, r));

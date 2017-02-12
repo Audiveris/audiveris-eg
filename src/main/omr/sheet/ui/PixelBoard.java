@@ -185,7 +185,6 @@ public class PixelBoard
         });
 
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

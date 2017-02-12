@@ -267,7 +267,6 @@ public class CheckPanel<C extends Checkable>
 
         final int checkNb = suite.getChecks().size();
         PanelBuilder b = new PanelBuilder(createLayout(checkNb), component);
-        b.setDefaultDialogBorder();
 
         CellConstraints c = new CellConstraints();
 

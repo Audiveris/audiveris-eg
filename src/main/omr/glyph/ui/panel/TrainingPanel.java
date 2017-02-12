@@ -145,7 +145,6 @@ class TrainingPanel
             standardWidth);
 
         builder = new PanelBuilder(layout, component);
-        builder.setDefaultDialogBorder(); // Useful ?
 
         defineLayout();
     }

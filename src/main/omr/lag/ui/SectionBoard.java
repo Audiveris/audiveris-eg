@@ -276,7 +276,6 @@ public class SectionBoard
     {
         FormLayout layout = Panel.makeFormLayout(4, 3);
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
         int r = 1; // --------------------------------

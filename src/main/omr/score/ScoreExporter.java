@@ -70,85 +70,85 @@ import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
 
-import com.audiveris.proxymusic.AboveBelow;
-import com.audiveris.proxymusic.Accidental;
-import com.audiveris.proxymusic.Articulations;
-import com.audiveris.proxymusic.Attributes;
-import com.audiveris.proxymusic.Backup;
-import com.audiveris.proxymusic.BackwardForward;
-import com.audiveris.proxymusic.BarStyle;
-import com.audiveris.proxymusic.Bass;
-import com.audiveris.proxymusic.BassAlter;
-import com.audiveris.proxymusic.BassStep;
-import com.audiveris.proxymusic.BeamValue;
-import com.audiveris.proxymusic.ClefSign;
-import com.audiveris.proxymusic.Credit;
-import com.audiveris.proxymusic.Defaults;
-import com.audiveris.proxymusic.Degree;
-import com.audiveris.proxymusic.DegreeAlter;
-import com.audiveris.proxymusic.DegreeType;
-import com.audiveris.proxymusic.DegreeValue;
-import com.audiveris.proxymusic.Direction;
-import com.audiveris.proxymusic.DirectionType;
-import com.audiveris.proxymusic.Empty;
-import com.audiveris.proxymusic.EmptyPrintStyleAlign;
-import com.audiveris.proxymusic.Encoding;
-import com.audiveris.proxymusic.FontStyle;
-import com.audiveris.proxymusic.FontWeight;
-import com.audiveris.proxymusic.FormattedText;
-import com.audiveris.proxymusic.Forward;
-import com.audiveris.proxymusic.Harmony;
-import com.audiveris.proxymusic.Identification;
-import com.audiveris.proxymusic.Key;
-import com.audiveris.proxymusic.Kind;
-import com.audiveris.proxymusic.Lyric;
-import com.audiveris.proxymusic.LyricFont;
-import com.audiveris.proxymusic.MarginType;
-import com.audiveris.proxymusic.MeasureNumberingValue;
-import com.audiveris.proxymusic.MidiInstrument;
-import com.audiveris.proxymusic.Notations;
-import com.audiveris.proxymusic.NoteType;
-import com.audiveris.proxymusic.Notehead;
-import com.audiveris.proxymusic.NoteheadValue;
-import com.audiveris.proxymusic.Ornaments;
-import com.audiveris.proxymusic.OverUnder;
-import com.audiveris.proxymusic.PageLayout;
-import com.audiveris.proxymusic.PageMargins;
-import com.audiveris.proxymusic.PartList;
-import com.audiveris.proxymusic.PartName;
-import com.audiveris.proxymusic.Pitch;
-import com.audiveris.proxymusic.Repeat;
-import com.audiveris.proxymusic.Rest;
-import com.audiveris.proxymusic.RightLeftMiddle;
-import com.audiveris.proxymusic.Root;
-import com.audiveris.proxymusic.RootStep;
-import com.audiveris.proxymusic.RootAlter;
-import com.audiveris.proxymusic.Scaling;
-import com.audiveris.proxymusic.ScoreInstrument;
-import com.audiveris.proxymusic.ScorePartwise;
-import com.audiveris.proxymusic.Sound;
-import com.audiveris.proxymusic.StaffDetails;
-import com.audiveris.proxymusic.StaffLayout;
-import com.audiveris.proxymusic.StartStop;
-import com.audiveris.proxymusic.StartStopChangeContinue;
-import com.audiveris.proxymusic.StartStopContinue;
-import com.audiveris.proxymusic.Stem;
-import com.audiveris.proxymusic.StemValue;
-import com.audiveris.proxymusic.SystemLayout;
-import com.audiveris.proxymusic.SystemMargins;
-import com.audiveris.proxymusic.TextElementData;
-import com.audiveris.proxymusic.Tie;
-import com.audiveris.proxymusic.Tied;
-import com.audiveris.proxymusic.Time;
-import com.audiveris.proxymusic.TimeModification;
-import com.audiveris.proxymusic.TimeSymbol;
-import com.audiveris.proxymusic.TypedText;
-import com.audiveris.proxymusic.UprightInverted;
-import com.audiveris.proxymusic.WedgeType;
-import com.audiveris.proxymusic.Work;
-import com.audiveris.proxymusic.YesNo;
+import org.audiveris.proxymusic.AboveBelow;
+import org.audiveris.proxymusic.Accidental;
+import org.audiveris.proxymusic.Articulations;
+import org.audiveris.proxymusic.Attributes;
+import org.audiveris.proxymusic.Backup;
+import org.audiveris.proxymusic.BackwardForward;
+import org.audiveris.proxymusic.BarStyle;
+import org.audiveris.proxymusic.Bass;
+import org.audiveris.proxymusic.BassAlter;
+import org.audiveris.proxymusic.BassStep;
+import org.audiveris.proxymusic.BeamValue;
+import org.audiveris.proxymusic.ClefSign;
+import org.audiveris.proxymusic.Credit;
+import org.audiveris.proxymusic.Defaults;
+import org.audiveris.proxymusic.Degree;
+import org.audiveris.proxymusic.DegreeAlter;
+import org.audiveris.proxymusic.DegreeType;
+import org.audiveris.proxymusic.DegreeValue;
+import org.audiveris.proxymusic.Direction;
+import org.audiveris.proxymusic.DirectionType;
+import org.audiveris.proxymusic.Empty;
+import org.audiveris.proxymusic.EmptyPrintStyleAlign;
+import org.audiveris.proxymusic.Encoding;
+import org.audiveris.proxymusic.FontStyle;
+import org.audiveris.proxymusic.FontWeight;
+import org.audiveris.proxymusic.FormattedText;
+import org.audiveris.proxymusic.Forward;
+import org.audiveris.proxymusic.Harmony;
+import org.audiveris.proxymusic.Identification;
+import org.audiveris.proxymusic.Key;
+import org.audiveris.proxymusic.Kind;
+import org.audiveris.proxymusic.Lyric;
+import org.audiveris.proxymusic.LyricFont;
+import org.audiveris.proxymusic.MarginType;
+import org.audiveris.proxymusic.MeasureNumberingValue;
+import org.audiveris.proxymusic.MidiInstrument;
+import org.audiveris.proxymusic.Notations;
+import org.audiveris.proxymusic.NoteType;
+import org.audiveris.proxymusic.Notehead;
+import org.audiveris.proxymusic.NoteheadValue;
+import org.audiveris.proxymusic.Ornaments;
+import org.audiveris.proxymusic.OverUnder;
+import org.audiveris.proxymusic.PageLayout;
+import org.audiveris.proxymusic.PageMargins;
+import org.audiveris.proxymusic.PartList;
+import org.audiveris.proxymusic.PartName;
+import org.audiveris.proxymusic.Pitch;
+import org.audiveris.proxymusic.Repeat;
+import org.audiveris.proxymusic.Rest;
+import org.audiveris.proxymusic.RightLeftMiddle;
+import org.audiveris.proxymusic.Root;
+import org.audiveris.proxymusic.RootStep;
+import org.audiveris.proxymusic.RootAlter;
+import org.audiveris.proxymusic.Scaling;
+import org.audiveris.proxymusic.ScoreInstrument;
+import org.audiveris.proxymusic.ScorePartwise;
+import org.audiveris.proxymusic.Sound;
+import org.audiveris.proxymusic.StaffDetails;
+import org.audiveris.proxymusic.StaffLayout;
+import org.audiveris.proxymusic.StartStop;
+import org.audiveris.proxymusic.StartStopChangeContinue;
+import org.audiveris.proxymusic.StartStopContinue;
+import org.audiveris.proxymusic.Stem;
+import org.audiveris.proxymusic.StemValue;
+import org.audiveris.proxymusic.SystemLayout;
+import org.audiveris.proxymusic.SystemMargins;
+import org.audiveris.proxymusic.TextElementData;
+import org.audiveris.proxymusic.Tie;
+import org.audiveris.proxymusic.Tied;
+import org.audiveris.proxymusic.Time;
+import org.audiveris.proxymusic.TimeModification;
+import org.audiveris.proxymusic.TimeSymbol;
+import org.audiveris.proxymusic.TypedText;
+import org.audiveris.proxymusic.UprightInverted;
+import org.audiveris.proxymusic.WedgeType;
+import org.audiveris.proxymusic.Work;
+import org.audiveris.proxymusic.YesNo;
 
-import com.audiveris.proxymusic.util.Marshalling;
+import org.audiveris.proxymusic.util.Marshalling;
 
 import java.awt.Font;
 import java.awt.Point;
@@ -202,7 +202,7 @@ public class ScoreExporter
                 throws Exception
         {
             try {
-                Marshalling.getContext();
+                Marshalling.getContext(ScorePartwise.class);
             } catch (JAXBException ex) {
                 logger.warn("Error preloading JaxbContext", ex);
                 throw ex;
@@ -243,7 +243,7 @@ public class ScoreExporter
     private MeasureRange measureRange;
 
     /** Factory for proxymusic entities */
-    private final com.audiveris.proxymusic.ObjectFactory factory = new com.audiveris.proxymusic.ObjectFactory();
+    private final org.audiveris.proxymusic.ObjectFactory factory = new org.audiveris.proxymusic.ObjectFactory();
 
     //~ Constructors -----------------------------------------------------------
     //---------------//
@@ -313,7 +313,7 @@ public class ScoreExporter
             score.accept(this);
         } finally {
             //  Marshal the proxy with what we've got
-            Marshalling.marshal(scorePartwise, os, injectSignature);
+            Marshalling.marshal(scorePartwise, os, injectSignature, 2);
         }
     }
 
@@ -380,7 +380,7 @@ public class ScoreExporter
         try {
             logger.debug("Visiting {}", arpeggiate);
 
-            com.audiveris.proxymusic.Arpeggiate pmArpeggiate = factory.createArpeggiate();
+            org.audiveris.proxymusic.Arpeggiate pmArpeggiate = factory.createArpeggiate();
 
             // relative-x
             pmArpeggiate.setRelativeX(
@@ -458,8 +458,8 @@ public class ScoreExporter
             if ((shape != omr.glyph.Shape.THIN_BARLINE)
                 && (shape != omr.glyph.Shape.PART_DEFINING_BARLINE)) {
                 try {
-                    com.audiveris.proxymusic.Barline pmBarline = factory.createBarline();
-                    com.audiveris.proxymusic.BarStyleColor barStyleColor = factory.
+                    org.audiveris.proxymusic.Barline pmBarline = factory.createBarline();
+                    org.audiveris.proxymusic.BarStyleColor barStyleColor = factory.
                             createBarStyleColor();
 
                     if (barline == current.measure.getBarline()) {
@@ -557,7 +557,7 @@ public class ScoreExporter
             Staff staff = current.note.getStaff();
             insertStaffId(direction, staff);
 
-            com.audiveris.proxymusic.EmptyPrintStyleAlign pmCoda = factory.createEmptyPrintStyleAlign();
+            org.audiveris.proxymusic.EmptyPrintStyleAlign pmCoda = factory.createEmptyPrintStyleAlign();
             // default-x
             pmCoda.setDefaultX(
                     toTenths(
@@ -757,7 +757,7 @@ public class ScoreExporter
 
             Direction direction = factory.createDirection();
             DirectionType directionType = factory.createDirectionType();
-            com.audiveris.proxymusic.Dynamics pmDynamics = factory.createDynamics();
+            org.audiveris.proxymusic.Dynamics pmDynamics = factory.createDynamics();
 
             // Precise dynamic signature
             pmDynamics.getPOrPpOrPpp().add(
@@ -812,7 +812,7 @@ public class ScoreExporter
         try {
             logger.debug("Visiting {}", fermata);
 
-            com.audiveris.proxymusic.Fermata pmFermata = factory.createFermata();
+            org.audiveris.proxymusic.Fermata pmFermata = factory.createFermata();
 
             // default-y (of the fermata dot)
             // For upright we use bottom of the box, for inverted the top of the box
@@ -1241,7 +1241,7 @@ public class ScoreExporter
 
             // Beams ?
             for (Beam beam : chord.getBeams()) {
-                com.audiveris.proxymusic.Beam pmBeam = factory.createBeam();
+                org.audiveris.proxymusic.Beam pmBeam = factory.createBeam();
                 pmBeam.setNumber(1 + chord.getBeams().indexOf(beam));
 
                 if (beam.isHook()) {
@@ -1371,7 +1371,7 @@ public class ScoreExporter
 
             Direction direction = new Direction();
             DirectionType directionType = new DirectionType();
-            com.audiveris.proxymusic.Pedal pmPedal = new com.audiveris.proxymusic.Pedal();
+            org.audiveris.proxymusic.Pedal pmPedal = new org.audiveris.proxymusic.Pedal();
 
             // No line (for the time being)
             pmPedal.setLine(YesNo.NO);
@@ -1679,7 +1679,7 @@ public class ScoreExporter
                 getNotations().getTiedOrSlurOrTuplet().add(tied);
             } else {
                 // Slur element
-                com.audiveris.proxymusic.Slur pmSlur = factory.createSlur();
+                org.audiveris.proxymusic.Slur pmSlur = factory.createSlur();
 
                 // Number attribute
                 Integer num = slurNumbers.get(slur);
@@ -1919,7 +1919,7 @@ public class ScoreExporter
         try {
             logger.debug("Visiting {}", tuplet);
 
-            com.audiveris.proxymusic.Tuplet pmTuplet = factory.createTuplet();
+            org.audiveris.proxymusic.Tuplet pmTuplet = factory.createTuplet();
 
             // Brackets
             if (constants.avoidTupletBrackets.isSet()) {
@@ -1975,7 +1975,7 @@ public class ScoreExporter
 
             Direction direction = factory.createDirection();
             DirectionType directionType = factory.createDirectionType();
-            com.audiveris.proxymusic.Wedge pmWedge = factory.createWedge();
+            org.audiveris.proxymusic.Wedge pmWedge = factory.createWedge();
 
             // Spread
             pmWedge.setSpread(toTenths(wedge.getSpread()));
@@ -2204,9 +2204,9 @@ public class ScoreExporter
     //-----------//
     // buildClef //
     //-----------//
-    private com.audiveris.proxymusic.Clef buildClef (Clef clef)
+    private org.audiveris.proxymusic.Clef buildClef (Clef clef)
     {
-        com.audiveris.proxymusic.Clef pmClef = factory.createClef();
+        org.audiveris.proxymusic.Clef pmClef = factory.createClef();
 
         // Staff number (only for multi-staff parts)
         if (current.scorePart.isMultiStaff()) {
@@ -2344,14 +2344,14 @@ public class ScoreExporter
      * @param scorePart provided ScorePart
      * @return the newly built proxymusic ScorePart instance
      */
-    private com.audiveris.proxymusic.ScorePart getScorePart (ScorePart scorePart)
+    private org.audiveris.proxymusic.ScorePart getScorePart (ScorePart scorePart)
     {
         current.scorePart = scorePart;
 
         ///logger.info("Processing " + scorePart);
 
         // Scorepart in partList
-        com.audiveris.proxymusic.ScorePart pmScorePart = factory.createScorePart();
+        org.audiveris.proxymusic.ScorePart pmScorePart = factory.createScorePart();
         pmScorePart.setId(scorePart.getPid());
 
         PartName partName = factory.createPartName();
@@ -2601,12 +2601,12 @@ public class ScoreExporter
         //~ Instance fields ----------------------------------------------------
 
         // Score dependent
-        com.audiveris.proxymusic.Work pmWork;
+        org.audiveris.proxymusic.Work pmWork;
 
         // Part dependent
         ScorePart scorePart;
 
-        com.audiveris.proxymusic.ScorePartwise.Part pmPart;
+        org.audiveris.proxymusic.ScorePartwise.Part pmPart;
 
         // Page dependent
         Page page;
@@ -2621,18 +2621,18 @@ public class ScoreExporter
         // Measure dependent
         Measure measure;
 
-        com.audiveris.proxymusic.ScorePartwise.Part.Measure pmMeasure;
+        org.audiveris.proxymusic.ScorePartwise.Part.Measure pmMeasure;
 
         Voice voice;
 
         // Note dependent
         omr.score.entity.Note note;
 
-        com.audiveris.proxymusic.Note pmNote;
+        org.audiveris.proxymusic.Note pmNote;
 
-        com.audiveris.proxymusic.Notations pmNotations;
+        org.audiveris.proxymusic.Notations pmNotations;
 
-        com.audiveris.proxymusic.Attributes pmAttributes;
+        org.audiveris.proxymusic.Attributes pmAttributes;
 
         //~ Methods ------------------------------------------------------------
         // Cleanup at end of measure
@@ -2823,7 +2823,7 @@ public class ScoreExporter
 
         private final Measure measure;
 
-        private final com.audiveris.proxymusic.Print pmPrint;
+        private final org.audiveris.proxymusic.Print pmPrint;
 
         /** Needed to remove the element if not actually used. */
         private boolean used = false;
@@ -2837,7 +2837,7 @@ public class ScoreExporter
             current.pmMeasure.getNoteOrBackupOrForward().add(pmPrint);
         }
 
-        private com.audiveris.proxymusic.Print getPrint ()
+        private org.audiveris.proxymusic.Print getPrint ()
         {
             used = true;
             return pmPrint;
@@ -2958,7 +2958,7 @@ public class ScoreExporter
 
             // Measure numbering?
             if (isFirst.system && isFirst.measure) {
-                com.audiveris.proxymusic.MeasureNumbering pmNumbering =
+                org.audiveris.proxymusic.MeasureNumbering pmNumbering =
                         factory.createMeasureNumbering();
                 if (isFirst.scorePart) {
                     pmNumbering.setValue(MeasureNumberingValue.SYSTEM);

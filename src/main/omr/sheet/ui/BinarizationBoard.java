@@ -176,7 +176,6 @@ public class BinarizationBoard
     {
         FormLayout layout = Panel.makeFormLayout(1, 3);
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

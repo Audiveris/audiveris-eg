@@ -249,7 +249,6 @@ class EvaluationBoard
         // they are filled or not
         ///layout.setRowGroups(new int[][]{{1, 3, 4, 5 }});
         PanelBuilder builder = new PanelBuilder(layout, getBody());
-        builder.setDefaultDialogBorder();
 
         CellConstraints cst = new CellConstraints();
 

@@ -225,7 +225,6 @@ public class GlyphTrainer
 
         CellConstraints cst = new CellConstraints();
         PanelBuilder builder = new PanelBuilder(layout, new Panel());
-        builder.setDefaultDialogBorder();
 
         int r = 1; // --------------------------------
         builder.add(selectionPanel.getComponent(), cst.xy(1, r));
