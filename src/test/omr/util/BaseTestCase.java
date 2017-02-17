@@ -33,6 +33,13 @@ public class BaseTestCase
     {
         super(name);
     }
+    
+    // ----------------------------------------------------------------//
+    // Provide one valid JUnit3-style test method to keep JUnit4 quite 
+    // ----------------------------------------------------------------//
+    public void testNothing ()
+    {
+    }
 
     //---------//
     // runTest //
