@@ -112,9 +112,5 @@ public class SymbolGlyph
                 setPitchPosition(descriptor.getPitchPosition());
             }
         }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug(dumpOf());
-        }
     }
 }

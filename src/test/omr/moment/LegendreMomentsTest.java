@@ -15,7 +15,7 @@ import org.junit.*;
  * @author Etiolles
  */
 public class LegendreMomentsTest
-    extends MomentsExtractorTest<LegendreMoments>
+    extends MomentsExtractorTestHelper<LegendreMoments>
 {
     //~ Constructors -----------------------------------------------------------
 

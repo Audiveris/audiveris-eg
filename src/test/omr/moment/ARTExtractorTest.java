@@ -16,7 +16,7 @@ import org.junit.*;
  * @author Hervé Bitteur
  */
 public class ARTExtractorTest
-    extends MomentsExtractorTest<ARTMoments>
+    extends MomentsExtractorTestHelper<ARTMoments>
 {
     //~ Constructors -----------------------------------------------------------
 
