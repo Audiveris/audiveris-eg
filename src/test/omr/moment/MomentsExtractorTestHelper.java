@@ -27,12 +27,11 @@ import javax.imageio.ImageIO;
 import org.junit.Ignore;
 
 /**
- * Class {@code MomentsExtractorTest}
+ * Class {@code MomentsExtractorTestHelper}
  *
  * @author Hervé Bitteur
  */
-@Ignore
-public class MomentsExtractorTest <D extends OrthogonalMoments<D>>
+public class MomentsExtractorTestHelper <D extends OrthogonalMoments<D>>
 {
     //~ Instance fields --------------------------------------------------------
 
@@ -44,7 +43,7 @@ public class MomentsExtractorTest <D extends OrthogonalMoments<D>>
     /**
      * Creates a new MomentsExtractorTest object.
      */
-    public MomentsExtractorTest ()
+    public MomentsExtractorTestHelper ()
     {
     }
 
