@@ -13,23 +13,12 @@ package omr.ui;
 
 import omr.WellKnowns;
 
-import omr.score.Score;
-
-import omr.script.Script;
-import omr.script.ScriptManager;
-
-import org.slf4j.Logger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-
-import javax.swing.SwingWorker;
 
 /**
  * Class {@code MacApplication} provides dynamic hooks into the
@@ -37,6 +26,7 @@ import javax.swing.SwingWorker;
  * Preferences, About, and Quit menu items.
  *
  * @author Brenton Partridge
+ * @author Max Poliakovski
  */
 public class MacApplication
         implements InvocationHandler
@@ -47,22 +37,12 @@ public class MacApplication
     private static final Logger logger = LoggerFactory.getLogger(
             MacApplication.class);
 
-    /** Cached ApplicationEvent class */
-    private static Class<?> eventClass;
-
-    static {
-        try {
-            eventClass = Class.forName("com.apple.eawt.ApplicationEvent");
-        } catch (Exception e) {
-            eventClass = null;
-        }
-    }
-
     //~ Methods ----------------------------------------------------------------
     /**
      * Invocation handler for
      * <code>
-     * com.apple.eawt.ApplicationListener</code>.
+     * com.apple.eawt.xxxHandler where
+     * xxx denotes About, Quit and Preferences interfaces respectively</code>.
      * This method should not be manually called;
      * it is used by the proxy to forward calls.
      *
@@ -75,73 +55,20 @@ public class MacApplication
             throws Throwable
     {
         String name = method.getName();
-        String filename = null;
-
-        Object event = getEvent(args);
-
-        if (event != null) {
-            setHandled(event);
-            filename = getFilename(event);
-        }
-
-        logger.debug(name);
 
         switch (name) {
         case "handlePreferences":
-            GuiActions.getInstance()
-                    .defineOptions(null);
+            GuiActions.getInstance().defineOptions(null);
 
             break;
 
-        case "handleQuit":
-            GuiActions.getInstance()
-                    .exit(null);
+        case "handleQuitRequestWith":
+            GuiActions.getInstance().exit(null);
 
             break;
 
         case "handleAbout":
-            GuiActions.getInstance()
-                    .showAbout(null);
-
-            break;
-
-        case "handleOpenFile":
-            logger.debug(filename);
-
-            if (filename.toLowerCase()
-                    .endsWith(".script")) {
-                final File file = new File(filename);
-                final SwingWorker<?, ?> worker = new SwingWorker<Object, Object>()
-                {
-                    @Override
-                    protected Object doInBackground ()
-                    {
-                        // Actually load the script
-                        logger.info("Loading script file {} ...", file);
-
-                        try {
-                            final Script script = ScriptManager.getInstance()
-                                    .load(
-                                    new FileInputStream(file));
-
-                            if (logger.isDebugEnabled()) {
-                                script.dump();
-                            }
-
-                            script.run();
-                        } catch (Exception ex) {
-                            logger.warn("Error loading script file {}", file);
-                        }
-
-                        return null;
-                    }
-                };
-
-                worker.execute();
-            } else {
-                // Actually load the sheet picture
-                Score score = new Score(new File(filename));
-            }
+            GuiActions.getInstance().showAbout(null);
 
             break;
         }
@@ -161,87 +88,46 @@ public class MacApplication
         if (!WellKnowns.MAC_OS_X) {
             return false;
         }
-
+        
         try {
-            //The class used to register hooks
-            Class<?> appClass = Class.forName("com.apple.eawt.Application");
-            Object app = appClass.newInstance();
-
-            //Enable the about menu item and the preferences menu item
-            for (String methodName : new String[]{
-                "setEnabledAboutMenu", "setEnabledPreferencesMenu"
-            }) {
-                Method method = appClass.getMethod(methodName, boolean.class);
-                method.invoke(app, true);
-            }
-
-            //The interface used to register hooks
-            Class<?> listenerClass = Class.forName(
-                    "com.apple.eawt.ApplicationListener");
-
-            //Using the current class loader,
-            //generate, load, and instantiate a class implementing listenerClass,
-            //providing an instance of this class as a callback for any method invocation
-            Object listenerProxy = Proxy.newProxyInstance(
+            // we will be using reflection here to call methods
+            // from the Mac OS X specific com.apple.eawt.* package in order
+            // to avoid compile and runtime errors on non-Mac platforms
+            Class<?> macAppClass = Class.forName("com.apple.eawt.Application");
+            Method getAppMethod = macAppClass.getMethod("getApplication");
+            Object macApp = getAppMethod.invoke(null);
+            
+            Class<?> aboutHandlerClass = Class.forName("com.apple.eawt.AboutHandler");
+            Method setAboutHandler = macAppClass.getMethod(
+                    "setAboutHandler", aboutHandlerClass);
+            
+            Class<?> quitHandlerClass = Class.forName("com.apple.eawt.QuitHandler");
+            Method setQuitHandler = macAppClass.getMethod("setQuitHandler",
+                    quitHandlerClass);
+            
+            Class<?> prefHandlerClass = Class.forName("com.apple.eawt.PreferencesHandler");
+            Method setPreferencesHandler = macAppClass.getMethod(
+                    "setPreferencesHandler", prefHandlerClass);
+            
+            setAboutHandler.invoke(macApp, Proxy.newProxyInstance(
                     MacApplication.class.getClassLoader(),
-                    new Class<?>[]{listenerClass},
-                    new MacApplication());
-
-            //Add the generated class as a hook
-            Method addListener = appClass.getMethod(
-                    "addApplicationListener",
-                    listenerClass);
-            addListener.invoke(app, listenerProxy);
-
+                    new Class<?>[]{aboutHandlerClass},
+                    new MacApplication()));
+            
+            setQuitHandler.invoke(macApp, Proxy.newProxyInstance(
+                    MacApplication.class.getClassLoader(),
+                    new Class<?>[]{quitHandlerClass},
+                    new MacApplication()));
+            
+            setPreferencesHandler.invoke(macApp, Proxy.newProxyInstance(
+                    MacApplication.class.getClassLoader(),
+                    new Class<?>[]{prefHandlerClass},
+                    new MacApplication()));
+            
             return true;
         } catch (Exception ex) {
             logger.warn("Unable to setup Mac OS X GUI integration", ex);
-
             return false;
-        }
-    }
-
-    private static Object getEvent (Object[] args)
-    {
-        if (args.length > 0) {
-            Object arg = args[0];
-
-            if (arg != null) {
-                try {
-                    if ((eventClass != null)
-                        && eventClass.isAssignableFrom(arg.getClass())) {
-                        return arg;
-                    }
-                } catch (Exception e) {
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static String getFilename (Object event)
-    {
-        try {
-            Method filename = eventClass.getMethod("getFilename");
-            Object rval = filename.invoke(event);
-
-            if (rval == null) {
-                return null;
-            } else {
-                return (String) rval;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static void setHandled (Object event)
-    {
-        try {
-            Method handled = eventClass.getMethod("setHandled", boolean.class);
-            handled.invoke(event, true);
-        } catch (Exception e) {
         }
     }
 }
