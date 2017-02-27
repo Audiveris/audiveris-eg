@@ -1,0 +1,26 @@
+//----------------------------------------------------------------------------//
+//                                                                            //
+//                          V e r t i c a l S i d e                           //
+//                                                                            //
+//----------------------------------------------------------------------------//
+// <editor-fold defaultstate="collapsed" desc="hdr">                          //
+//  Copyright © Hervé Bitteur and others 2000-2013. All rights reserved.      //
+//  This software is released under the GNU General Public License.           //
+//  Goto http://kenai.com/projects/audiveris to report bugs or suggestions.   //
+//----------------------------------------------------------------------------//
+// </editor-fold>
+package org.audiveris.omr.util;
+
+/**
+ * Enum {@code VerticalSide} is meant to ease programmatic use of top
+ * and bottom sides of staves, system boundaries, etc...
+ *
+ * @author Hervé Bitteur
+ */
+public enum VerticalSide
+{
+
+    TOP,
+    BOTTOM;
+
+}

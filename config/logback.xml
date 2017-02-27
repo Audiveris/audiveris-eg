@@ -21,13 +21,13 @@
         </encoder>
     </appender>
     
-    <appender name="GUI" class="omr.log.LogGuiAppender">  
+    <appender name="GUI" class="org.audiveris.omr.log.LogGuiAppender">  
         <!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter"> 
             <level>INFO</level>
         </filter>-->
     </appender>
     
-    <appender name="STEP" class="omr.log.LogStepAppender">  
+    <appender name="STEP" class="org.audiveris.omr.log.LogStepAppender">  
         <!-- We keep only messages of level >= INFO -->      
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter"> 
             <level>INFO</level>
@@ -42,7 +42,7 @@
     </root>
     
     <!-- Define DEBUG loggers here below: -->
-    <logger name="omr.sheet.picture.Ghostscript" level="DEBUG"/>
+    <logger name="org.audiveris.omr.sheet.picture.Ghostscript" level="DEBUG"/>
 <!--    <logger name="omr.step.Stepping" level="DEBUG"/>-->
 <!--    <logger name="omr.script.Script" level="DEBUG"/>-->
 <!--    <logger name="omr.sheet.picture.PictureLoader" level="DEBUG"/>-->
