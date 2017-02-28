@@ -2,6 +2,7 @@ syntax: glob
 
 # Ignore gradle files
 .gradle/
+.nb-gradle/*
 
 # Ignore .jpg and .pdf under the src directory since they are produced via umlet
 # Images handled by conf management should use other suffix (.png for example)
@@ -9,14 +10,12 @@ src/**/*.jpg
 src/**/*.pdf
 dev/material/*.jpg
 
-.hgignore
+.gitignore
 *.exe
 *.log
 *.mf
 build/*
 dist/*
-audiveris.bat
-installer/build/*
 config/run.properties
 data/benches
 data/print/*
@@ -25,8 +24,6 @@ data/scripts/*
 data/temp/*
 data/train/core/*
 data/www/docs/api
-manifest.mf
-nbproject/configs/*
 private/*
 resources/*
 target/*
@@ -36,5 +33,6 @@ target/*
 \.rej$
 \.conflict\~$
 
-# Ignore Macintosh Finder garbage
+# Ignore system files
 .DS_Store
+Thumb.db
