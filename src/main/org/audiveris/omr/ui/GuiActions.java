@@ -575,8 +575,8 @@ public class GuiActions
             Topic.version.comp.setText(
                     WellKnowns.TOOL_REF + ":" + WellKnowns.TOOL_BUILD);
             Topic.classes.comp.setText(WellKnowns.CLASS_CONTAINER.toString());
-            Topic.license.comp.setText("GNU GPL V2");
-
+            Topic.license.comp.setText("GNU GPL V3");
+            
             Topic.javaVendor.comp.setText(System.getProperty("java.vendor"));
             Topic.javaVersion.comp.setText(System.getProperty("java.version"));
             Topic.javaRuntime.comp.setText(
