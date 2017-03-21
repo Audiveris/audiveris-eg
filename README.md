@@ -9,7 +9,7 @@ we simply try another iteration. The main difficulty is of course that doing so
 we have no way to know if we have actually reached the best interpretation.
 For lower-quality input scores, a more sophisticated approach is therefore required.
 
-Morevoer, previous Audiveris-eg release (V4.3) relies on various legacy tools
+Moreover, previous Audiveris-eg release (V4.3) relies on various legacy tools
 and technologies. Among them are [Ant](http://ant.apache.org) for building and
 [Java Web Start](https://docs.oracle.com/javase/8/docs/technotes/guides/javaws/)
 for cross-platform application deployment. Unfortunately, it has become increasigly
@@ -58,7 +58,9 @@ To run audiveris as GUI tool, just issue
 
 ## Contributions
 
-__IMPORTANT: Please keep in mind that the main purpose of this repositoy is to preserve
+welcome!
+
+__IMPORTANT: Please keep in mind that the main purpose of this repository is to preserve
 audiveris-eg and to make this old software run on modern OSes. New features should
 go into the [new audiveris][5]. For this repository, we'll only accept
 bug fixes and compatibilty changes.__
