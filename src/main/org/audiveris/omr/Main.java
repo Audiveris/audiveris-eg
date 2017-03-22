@@ -520,7 +520,7 @@ public class Main
                     "Environment:\n" + "- Audiveris:    {}\n"
                     + "- OS:           {}\n" + "- Architecture: {}\n"
                     + "- Java VM:      {}",
-                    WellKnowns.TOOL_REF + ":" + WellKnowns.TOOL_BUILD,
+                    WellKnowns.TOOL_REF,
                     System.getProperty("os.name") + " "
                     + System.getProperty("os.version"),
                     System.getProperty("os.arch"),

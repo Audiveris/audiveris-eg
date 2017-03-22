@@ -69,9 +69,6 @@ public class WellKnowns
     /** Application reference: {@value}. */
     public static final String TOOL_REF = ProgramId.PROGRAM_VERSION;
 
-    /** Application build: {@value}. */
-    public static final String TOOL_BUILD = ProgramId.PROGRAM_BUILD;
-
     /** Specific prefix for application folders: {@value} */
     private static final String TOOL_PREFIX = "/" + COMPANY_ID + "/"
                                               + TOOL_NAME;
