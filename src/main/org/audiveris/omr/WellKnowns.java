@@ -34,6 +34,8 @@ import java.lang.reflect.Field;
 import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Enumeration;
@@ -417,11 +419,40 @@ public class WellKnowns
         return FileTime.fromMillis(millis);
     }
 
+    //-----------------------//
+    // scanCommonOcrLocation //
+    //-----------------------//
+    private static String scanCommonOcrLocation(String[] locations)
+    {
+        for (String loc: locations) {
+            final Path path = Paths.get(loc);
+            if (Files.exists(path.resolve("tessdata"))) {
+                return loc;
+            }
+        }
+
+        throw new InstallationException("Tesseract data could not be found. " +
+                "Try setting the TESSDATA_PREFIX environment variable to the parent folder of \"tessdata\".");
+    }
+
     //--------------//
     // getOcrFolder //
     //--------------//
     private static File getOcrFolder ()
     {
+        // common Macintosh TESSDATA locations
+        final String[] macOcrLocations = {
+            "/opt/local/share", // Macports
+            "/usr/local/opt/tesseract/share" // Homebrew
+        };
+
+        // common Linux TESSDATA locations
+        final String[] linuxOcrLocations = {
+            "/usr/share/tesseract-ocr", // Debian, Ubuntu and derivatives
+            "/usr/share", // OpenSUSE
+            "/usr/share/tesseract" // Fedora
+        };
+
         // First, try to use TESSDATA_PREFIX environment variable
         // which might denote a Tesseract installation
         final String TESSDATA_PREFIX = "TESSDATA_PREFIX";
@@ -435,16 +466,21 @@ public class WellKnowns
             }
         }
 
-        // Fallback to default directory
-        if (LINUX) {
-            return new File("/usr/share/tesseract-ocr");
-        } else if (WINDOWS) {
+        // Fallback to default directory on Windows
+        if (WINDOWS) {
             final String pf32 = OS_ARCH.equals("x86") ? "ProgramFiles"
                     : "ProgramFiles(x86)";
 
             return new File(new File(System.getenv(pf32)), "tesseract-ocr");
+
+        // scan common locations on Mac and Linux
+        } else if (LINUX) {
+            return new File(scanCommonOcrLocation(linuxOcrLocations));
+        } else if (MAC_OS_X) {
+            return new File(scanCommonOcrLocation(macOcrLocations));
         } else {
-            throw new InstallationException("Tesseract-OCR is not installed");
+            throw new InstallationException("Tesseract data could not be found. " +
+                "Try setting the TESSDATA_PREFIX environment variable to the parent folder of \"tessdata\".");
         }
     }
 
