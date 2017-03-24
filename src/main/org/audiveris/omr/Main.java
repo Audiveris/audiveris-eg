@@ -123,7 +123,7 @@ public class Main
         showEnvironment();
 
         // Native libs
-        loadNativeLibraries();
+        //loadNativeLibraries();
 
         if (!parameters.batchMode) {
             // For interactive mode
