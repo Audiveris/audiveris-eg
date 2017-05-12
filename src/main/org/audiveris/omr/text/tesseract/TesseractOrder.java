@@ -77,8 +77,8 @@ public class TesseractOrder
     /** Needed (for OpenJDK) to register TIFF support. */
     static {
         IIORegistry registry = IIORegistry.getDefaultInstance();
-        registry.registerServiceProvider(new com.sun.media.imageioimpl.plugins.tiff.TIFFImageWriterSpi());
-        registry.registerServiceProvider(new com.sun.media.imageioimpl.plugins.tiff.TIFFImageReaderSpi());
+        registry.registerServiceProvider(new com.github.jaiimageio.impl.plugins.tiff.TIFFImageWriterSpi());
+        registry.registerServiceProvider(new com.github.jaiimageio.impl.plugins.tiff.TIFFImageReaderSpi());
     }
 
     //~ Instance fields --------------------------------------------------------
